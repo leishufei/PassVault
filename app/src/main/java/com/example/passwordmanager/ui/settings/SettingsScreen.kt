@@ -41,6 +41,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.passwordmanager.ui.theme.DarkSurface
 import com.example.passwordmanager.ui.theme.PrimaryPurple
 import com.example.passwordmanager.ui.theme.SuccessGreen
@@ -61,11 +63,11 @@ import com.example.passwordmanager.ui.theme.WarningYellow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
     val context = LocalContext.current
-
-    var biometricEnabled by remember { mutableStateOf(true) }
-    var autoLockTime by remember { mutableStateOf("5分钟") }
+    val uiState by viewModel.uiState.collectAsState()
 
     var showSafeDialog by remember { mutableStateOf(false) }
     var showAutoLockDialog by remember { mutableStateOf(false) }
@@ -75,13 +77,25 @@ fun SettingsScreen() {
 
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) {
-            Toast.makeText(context, "备份已导出至: ${uri.lastPathSegment}", Toast.LENGTH_SHORT).show()
+            viewModel.exportBackup(uri)
+                .onSuccess {
+                    Toast.makeText(context, "备份已导出", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure {
+                    Toast.makeText(context, "备份失败: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            Toast.makeText(context, "数据恢复成功", Toast.LENGTH_SHORT).show()
+            viewModel.importBackup(uri)
+                .onSuccess {
+                    Toast.makeText(context, "数据恢复成功", Toast.LENGTH_SHORT).show()
+                }
+                .onFailure {
+                    Toast.makeText(context, "恢复失败: ${it.message}", Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
@@ -115,13 +129,19 @@ fun SettingsScreen() {
                 SettingItem(icon = Icons.Default.Security, iconTint = PrimaryPurple, title = "保险箱", subtitle = "安全评分 90/100") {
                     showSafeDialog = true
                 }
-                SettingItem(icon = Icons.Default.Timer, title = "自动锁定", value = autoLockTime) {
+                SettingItem(icon = Icons.Default.Timer, title = "自动锁定", value = uiState.autoLockTime) {
                     showAutoLockDialog = true
                 }
                 SettingItem(icon = Icons.Default.Lock, title = "主密码", subtitle = "更改主密码") {
                     showMasterPasswordDialog = true
                 }
-                SettingSwitchItem(icon = Icons.Default.Fingerprint, title = "生物识别解锁", subtitle = "使用指纹或面部解锁", checked = biometricEnabled, onCheckedChange = { biometricEnabled = it })
+                SettingSwitchItem(
+                    icon = Icons.Default.Fingerprint,
+                    title = "生物识别解锁",
+                    subtitle = "使用指纹或面部解锁",
+                    checked = uiState.biometricEnabled,
+                    onCheckedChange = { viewModel.setBiometricEnabled(it) }
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -146,16 +166,24 @@ fun SettingsScreen() {
     }
 
     if (showSafeDialog) {
+        val stats = uiState.passwordStats
         AlertDialog(
             onDismissRequest = { showSafeDialog = false },
             title = { Text("安全评分分析", color = Color.White) },
             text = {
-                Column {
-                    Text("综合评分: 90/100", color = SuccessGreen, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("• 强密码: 12", color = Color.White)
-                    Text("• 弱密码: 0", color = Color.White)
-                    Text("• 重复使用: 1", color = WarningYellow)
+                if (stats == null) {
+                    Text("加载中...", color = Color.White)
+                } else if (stats.totalCount == 0) {
+                    Text("暂无密码数据", color = Color.White)
+                } else {
+                    Column {
+                        Text("综合评分: ${stats.averageStrength}/100", color = SuccessGreen, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("• 强密码: ${stats.strongCount}", color = Color.White)
+                        Text("• 中等密码: ${stats.totalCount - stats.strongCount - stats.weakCount}", color = Color.White)
+                        Text("• 弱密码: ${stats.weakCount}", color = Color.White)
+                        Text("• 重复使用: ${stats.duplicateCount}", color = if (stats.duplicateCount > 0) WarningYellow else Color.White)
+                    }
                 }
             },
             confirmButton = {
@@ -176,16 +204,16 @@ fun SettingsScreen() {
                             Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    autoLockTime = option
+                                    viewModel.setAutoLockTime(option)
                                     showAutoLockDialog = false
                                 }
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = autoLockTime == option,
+                                selected = uiState.autoLockTime == option,
                                 onClick = {
-                                    autoLockTime = option
+                                    viewModel.setAutoLockTime(option)
                                     showAutoLockDialog = false
                                 }
                             )
@@ -202,6 +230,7 @@ fun SettingsScreen() {
     if (showMasterPasswordDialog) {
         var oldPassword by remember { mutableStateOf("") }
         var newPassword by remember { mutableStateOf("") }
+        var errorMessage by remember { mutableStateOf<String?>(null) }
 
         AlertDialog(
             onDismissRequest = { showMasterPasswordDialog = false },
@@ -229,16 +258,26 @@ fun SettingsScreen() {
                             unfocusedTextColor = Color.White
                         )
                     )
+                    errorMessage?.let {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(it, color = Color.Red, fontSize = 12.sp)
+                    }
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (oldPassword.isNotEmpty() && newPassword.isNotEmpty()) {
-                            Toast.makeText(context, "主密码修改成功", Toast.LENGTH_SHORT).show()
-                            showMasterPasswordDialog = false
+                        if (oldPassword.isEmpty() || newPassword.isEmpty()) {
+                            errorMessage = "密码不能为空"
                         } else {
-                            Toast.makeText(context, "密码不能为空", Toast.LENGTH_SHORT).show()
+                            viewModel.changeMasterPassword(oldPassword, newPassword)
+                                .onSuccess {
+                                    Toast.makeText(context, "主密码修改成功", Toast.LENGTH_SHORT).show()
+                                    showMasterPasswordDialog = false
+                                }
+                                .onFailure {
+                                    errorMessage = it.message
+                                }
                         }
                     }
                 ) { Text("保存", color = PrimaryPurple) }

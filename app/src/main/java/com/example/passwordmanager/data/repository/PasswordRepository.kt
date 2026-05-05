@@ -114,6 +114,61 @@ class PasswordRepository @Inject constructor(
             updatedAt = updatedAt
         )
     }
+
+    suspend fun getPasswordStatistics(): PasswordStatistics {
+        val entries = passwordDao.getAllPasswordsForAnalysis()
+        if (entries.isEmpty()) {
+            return PasswordStatistics(0, 0, 0, 0, 0)
+        }
+
+        val passwords = entries.map { entry ->
+            cryptoManager.decrypt(EncryptedData(entry.encryptedPassword, entry.passwordIv))
+        }
+
+        var strongCount = 0
+        var weakCount = 0
+        val passwordCounts = mutableMapOf<String, Int>()
+
+        passwords.forEach { password ->
+            val strength = calculatePasswordStrength(password)
+            when (strength) {
+                3 -> strongCount++
+                1 -> weakCount++
+            }
+            passwordCounts[password] = (passwordCounts[password] ?: 0) + 1
+        }
+
+        val duplicateCount = passwordCounts.count { it.value > 1 }
+        val mediumCount = entries.size - strongCount - weakCount
+
+        val strongRatio = strongCount.toFloat() / entries.size
+        val duplicateRatio = if (duplicateCount > 0) duplicateCount.toFloat() / entries.size else 0f
+        val score = ((strongRatio * 0.6f + (1 - duplicateRatio) * 0.4f) * 100).toInt()
+
+        return PasswordStatistics(
+            totalCount = entries.size,
+            strongCount = strongCount,
+            weakCount = weakCount,
+            duplicateCount = duplicateCount,
+            averageStrength = score
+        )
+    }
+
+    private fun calculatePasswordStrength(password: String): Int {
+        val length = password.length
+        val hasUppercase = password.any { it.isUpperCase() }
+        val hasLowercase = password.any { it.isLowerCase() }
+        val hasDigit = password.any { it.isDigit() }
+        val hasSpecial = password.any { !it.isLetterOrDigit() }
+
+        val charTypeCount = listOf(hasUppercase, hasLowercase, hasDigit, hasSpecial).count { it }
+
+        return when {
+            length >= 12 && charTypeCount >= 3 -> 3
+            length >= 8 && charTypeCount >= 2 -> 2
+            else -> 1
+        }
+    }
 }
 
 data class PasswordEntryDisplay(
@@ -129,4 +184,12 @@ data class PasswordEntryDisplay(
     val strength: Int,
     val createdAt: Long,
     val updatedAt: Long
+)
+
+data class PasswordStatistics(
+    val totalCount: Int,
+    val strongCount: Int,
+    val weakCount: Int,
+    val duplicateCount: Int,
+    val averageStrength: Int
 )

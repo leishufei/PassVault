@@ -144,6 +144,18 @@ fun PasswordDetailScreen(
             },
             actions = {
                 if (!isNewPassword) {
+                    if (!isEditing) {
+                        IconButton(onClick = {
+                            isFavorite = !isFavorite
+                            passwordId?.let { viewModel.toggleFavorite(it, isFavorite) }
+                        }) {
+                            Icon(
+                                imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) WarningYellow else Color.White
+                            )
+                        }
+                    }
                     if (isEditing) {
                         IconButton(
                             onClick = {
@@ -202,13 +214,13 @@ fun PasswordDetailScreen(
             // Icon
             val colorIndex = if (iconColor != 0) iconColor else abs(title.hashCode()) % BrandColors.size
             val bgColor = BrandColors[colorIndex]
-            
+
             Box(
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(if (title.isEmpty()) DarkSurface else bgColor.copy(alpha = 0.2f))
-                    .clickable(enabled = isEditing) { 
+                    .clickable(enabled = isEditing) {
                         if (title.isNotEmpty()) {
                             iconColor = (iconColor + 1) % BrandColors.size
                         }
@@ -219,43 +231,30 @@ fun PasswordDetailScreen(
                     Text(
                         text = title.take(1).uppercase(),
                         color = bgColor,
-                        fontSize = 40.sp,
+                        fontSize = 48.sp,
                         fontWeight = FontWeight.Bold
                     )
                 } else {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (!isNewPassword && !isEditing) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = title,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(48.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(onClick = {
-                        isFavorite = !isFavorite
-                        passwordId?.let { viewModel.toggleFavorite(it, isFavorite) }
-                    }) {
-                        Icon(
-                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) WarningYellow else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Inputs
             if (isEditing || isNewPassword) {
-                DetailTextField(value = title, onValueChange = { title = it }, label = "名称", placeholder = "例如: Google", readOnly = !isEditing)
+                DetailTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = "名称",
+                    placeholder = "例如: Google",
+                    readOnly = !isEditing
+                )
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -267,7 +266,7 @@ fun PasswordDetailScreen(
                 readOnly = !isEditing,
                 onCopy = { clipboardManager.setText(AnnotatedString(username)) }
             )
-            
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(
@@ -276,8 +275,8 @@ fun PasswordDetailScreen(
                     .background(DarkSurface, RoundedCornerShape(16.dp))
                     .padding(16.dp)
             ) {
-                Text("密码", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
+                Text("密码", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = password,
@@ -286,6 +285,7 @@ fun PasswordDetailScreen(
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true,
                         readOnly = !isEditing,
+                        textStyle = MaterialTheme.typography.bodyLarge,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -295,38 +295,44 @@ fun PasswordDetailScreen(
                             unfocusedTextColor = Color.White
                         )
                     )
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }, modifier = Modifier.size(48.dp)) {
                         Icon(
                             imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-                    IconButton(onClick = { clipboardManager.setText(AnnotatedString(password)) }) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    IconButton(onClick = { clipboardManager.setText(AnnotatedString(password)) }, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Copy",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
-                
+
                 // Strength bar
                 if (isEditing) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("强度: ", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("强度: ", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         val strengthText = if (password.length > 10) "强" else if (password.length > 6) "中" else "弱"
                         val strengthColor = if (password.length > 10) SuccessGreen else if (password.length > 6) WarningYellow else Color.Red
-                        Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(strengthText, fontSize = 13.sp, color = strengthColor, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(12.dp))
                         Box(
                             modifier = Modifier
-                                .height(4.dp)
+                                .height(6.dp)
                                 .weight(1f)
-                                .background(DarkSurface, RoundedCornerShape(2.dp))
+                                .background(MaterialTheme.colorScheme.background, RoundedCornerShape(3.dp))
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(if (password.length > 10) 0.8f else if (password.length > 6) 0.5f else 0.2f)
-                                    .height(4.dp)
-                                    .background(strengthColor, RoundedCornerShape(2.dp))
+                                    .height(6.dp)
+                                    .background(strengthColor, RoundedCornerShape(3.dp))
                             )
                         }
                     }
@@ -334,16 +340,18 @@ fun PasswordDetailScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { showGeneratorDialog = true },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
                     ) {
-                        Text("生成密码", fontWeight = FontWeight.Bold)
+                        Text("生成密码", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             DetailTextField(
                 value = website,
@@ -354,7 +362,7 @@ fun PasswordDetailScreen(
                 onCopy = { clipboardManager.setText(AnnotatedString(website)) }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             DetailTextField(
                 value = notes,
@@ -394,7 +402,7 @@ fun PasswordDetailScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
@@ -451,7 +459,8 @@ fun DetailTextField(
             .background(DarkSurface, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(4.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             OutlinedTextField(
                 value = value,
@@ -460,6 +469,7 @@ fun DetailTextField(
                 modifier = Modifier.weight(1f),
                 singleLine = singleLine,
                 readOnly = readOnly,
+                textStyle = MaterialTheme.typography.bodyLarge,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
@@ -469,9 +479,14 @@ fun DetailTextField(
                     unfocusedTextColor = Color.White
                 )
             )
-            if (onCopy != null) {
-                IconButton(onClick = onCopy) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (onCopy != null && value.isNotEmpty()) {
+                IconButton(onClick = onCopy, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copy",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }

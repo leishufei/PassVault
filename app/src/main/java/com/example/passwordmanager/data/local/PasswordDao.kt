@@ -38,4 +38,7 @@ interface PasswordDao {
 
     @Query("DELETE FROM password_entries")
     suspend fun deleteAllPasswords()
+
+    @Query("SELECT * FROM password_entries")
+    suspend fun getAllPasswordsForAnalysis(): List<PasswordEntry>
 }

@@ -26,10 +26,18 @@ import com.example.passwordmanager.ui.passwords.PasswordDetailScreen
 import com.example.passwordmanager.ui.passwords.PasswordListScreen
 import com.example.passwordmanager.ui.passwords.PasswordViewModel
 import com.example.passwordmanager.ui.theme.PasswordManagerTheme
+import com.example.passwordmanager.domain.auth.AuthManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
+
+    @Inject
+    lateinit var authManager: AuthManager
+
+    private var lastActiveTime: Long = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -42,6 +50,18 @@ class MainActivity : FragmentActivity() {
                     PasswordManagerAppContent()
                 }
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        lastActiveTime = System.currentTimeMillis()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (lastActiveTime > 0 && authManager.shouldAutoLock(lastActiveTime)) {
+            recreate()
         }
     }
 }

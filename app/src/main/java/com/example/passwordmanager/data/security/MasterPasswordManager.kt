@@ -52,6 +52,16 @@ class MasterPasswordManager @Inject constructor(
             .apply()
     }
 
+    fun getAutoLockTime(): String {
+        return sharedPreferences.getString(KEY_AUTO_LOCK_TIME, "5分钟") ?: "5分钟"
+    }
+
+    fun setAutoLockTime(time: String) {
+        sharedPreferences.edit()
+            .putString(KEY_AUTO_LOCK_TIME, time)
+            .apply()
+    }
+
     private fun hashPassword(password: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val hash = digest.digest(password.toByteArray(Charsets.UTF_8))
@@ -62,5 +72,6 @@ class MasterPasswordManager @Inject constructor(
         private const val PREFS_NAME = "master_password_prefs"
         private const val KEY_MASTER_PASSWORD_HASH = "master_password_hash"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
+        private const val KEY_AUTO_LOCK_TIME = "auto_lock_time"
     }
 }
