@@ -74,6 +74,7 @@ fun PasswordManagerAppContent() {
         }
 
         composable("login") {
+            val activity = androidx.compose.ui.platform.LocalContext.current as FragmentActivity
             LaunchedEffect(authState.isAuthenticated) {
                 if (authState.isAuthenticated) {
                     navController.navigate("main") {
@@ -87,6 +88,7 @@ fun PasswordManagerAppContent() {
                     authViewModel.verifyMasterPassword(password)
                 },
                 onBiometricClick = {
+                    authViewModel.authenticateWithBiometric(activity)
                 },
                 isBiometricAvailable = authState.isBiometricAvailable,
                 isBiometricEnabled = authState.isBiometricEnabled,

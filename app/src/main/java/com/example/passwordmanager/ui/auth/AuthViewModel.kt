@@ -1,5 +1,6 @@
 package com.example.passwordmanager.ui.auth
 
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.passwordmanager.domain.auth.AuthManager
@@ -89,6 +90,14 @@ class AuthViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun authenticateWithBiometric(activity: FragmentActivity) {
+        authManager.authenticateWithBiometric(
+            activity,
+            onSuccess = { onBiometricSuccess() },
+            onError = { onBiometricError(it) }
+        )
     }
 }
 

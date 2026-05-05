@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.MoreVert
@@ -28,19 +29,28 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -60,6 +70,9 @@ fun PasswordListScreen(
 ) {
     val passwords by viewModel.passwords.collectAsState()
     val filterMode by viewModel.filterMode.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    
+    var isSearchActive by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -74,37 +87,64 @@ fun PasswordListScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = "密码",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            if (isSearchActive) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { viewModel.searchPasswords(it) },
+                    placeholder = { Text("搜索密码...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = DarkSurface,
+                        unfocusedContainerColor = DarkSurface,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(24.dp),
+                    trailingIcon = {
+                        IconButton(onClick = { 
+                            isSearchActive = false 
+                            viewModel.searchPasswords("")
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                )
+            } else {
+                Text(
+                    text = "密码",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { /* TODO: Show Search Bar */ }) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color.White
-                    )
-                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { isSearchActive = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = Color.White
+                        )
+                    }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(PrimaryPurple)
-                        .clickable { onAddClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Add",
-                        tint = Color.White
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryPurple)
+                            .clickable { onAddClick() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -160,6 +200,9 @@ fun PasswordListScreen(
                     },
                     onFavoriteClick = {
                         viewModel.toggleFavorite(password.id, !password.isFavorite)
+                    },
+                    onDelete = {
+                        viewModel.deletePassword(password.id)
                     }
                 )
             }
@@ -201,8 +244,12 @@ fun CustomFilterChip(
 fun PasswordListItem(
     password: PasswordEntryDisplay,
     onClick: () -> Unit,
-    onFavoriteClick: () -> Unit
+    onFavoriteClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -266,12 +313,41 @@ fun PasswordListItem(
                 )
             }
 
-            IconButton(onClick = { /* Show Context Menu */ }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Box {
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "More",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false },
+                    modifier = Modifier.background(DarkSurface)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("复制密码", color = Color.White) },
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(password.password))
+                            showMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("复制用户名", color = Color.White) },
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(password.username))
+                            showMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("删除", color = Color.Red) },
+                        onClick = {
+                            onDelete()
+                            showMenu = false
+                        }
+                    )
+                }
             }
         }
     }

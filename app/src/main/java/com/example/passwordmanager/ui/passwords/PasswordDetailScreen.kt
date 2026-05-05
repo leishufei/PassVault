@@ -95,8 +95,10 @@ fun PasswordDetailScreen(
     var showGeneratorDialog by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
 
-    val clipboardManager = LocalClipboardManager.current
     val isNewPassword = passwordId == null
+    var isEditing by remember { mutableStateOf(isNewPassword) }
+
+    val clipboardManager = LocalClipboardManager.current
 
     LaunchedEffect(passwordId) {
         passwordId?.let { id ->
@@ -124,37 +126,55 @@ fun PasswordDetailScreen(
         TopAppBar(
             title = {
                 Text(
-                    text = if (isNewPassword) "添加密码" else "",
+                    text = if (isNewPassword) "添加密码" else if (isEditing) "编辑密码" else "密码详情",
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
             },
             navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
+                IconButton(onClick = {
+                    if (isEditing && !isNewPassword) {
+                        isEditing = false
+                    } else {
+                        onNavigateBack()
+                    }
+                }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
                 }
             },
             actions = {
                 if (!isNewPassword) {
-                    IconButton(onClick = { /* Edit action if any */ }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
-                    }
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.White)
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(DarkSurface)
+                    if (isEditing) {
+                        IconButton(
+                            onClick = {
+                                viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0)
+                                isEditing = false
+                            },
+                            enabled = title.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("删除密码", color = Color.Red) },
-                                onClick = { 
-                                    showMenu = false
-                                    showDeleteDialog = true 
-                                }
-                            )
+                            Icon(Icons.Default.Check, contentDescription = "Save", tint = PrimaryPurple)
+                        }
+                    } else {
+                        IconButton(onClick = { isEditing = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.White)
+                        }
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.White)
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                modifier = Modifier.background(DarkSurface)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("删除密码", color = Color.Red) },
+                                    onClick = { 
+                                        showMenu = false
+                                        showDeleteDialog = true 
+                                    }
+                                )
+                            }
                         }
                     }
                 } else {
@@ -188,7 +208,7 @@ fun PasswordDetailScreen(
                     .size(80.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(if (title.isEmpty()) DarkSurface else bgColor.copy(alpha = 0.2f))
-                    .clickable { 
+                    .clickable(enabled = isEditing) { 
                         if (title.isNotEmpty()) {
                             iconColor = (iconColor + 1) % BrandColors.size
                         }
@@ -209,7 +229,7 @@ fun PasswordDetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (!isNewPassword) {
+            if (!isNewPassword && !isEditing) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = title,
@@ -234,8 +254,8 @@ fun PasswordDetailScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // Inputs
-            if (isNewPassword) {
-                DetailTextField(value = title, onValueChange = { title = it }, label = "名称", placeholder = "例如: Google")
+            if (isEditing || isNewPassword) {
+                DetailTextField(value = title, onValueChange = { title = it }, label = "名称", placeholder = "例如: Google", readOnly = !isEditing)
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -244,6 +264,7 @@ fun PasswordDetailScreen(
                 onValueChange = { username = it },
                 label = "用户名",
                 placeholder = "例如: user@gmail.com",
+                readOnly = !isEditing,
                 onCopy = { clipboardManager.setText(AnnotatedString(username)) }
             )
             
@@ -264,11 +285,14 @@ fun PasswordDetailScreen(
                         modifier = Modifier.weight(1f),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true,
+                        readOnly = !isEditing,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
                         )
                     )
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -284,29 +308,29 @@ fun PasswordDetailScreen(
                 }
                 
                 // Strength bar
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("强度: ", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    val strengthText = if (password.length > 10) "强" else if (password.length > 6) "中" else "弱"
-                    val strengthColor = if (password.length > 10) SuccessGreen else if (password.length > 6) WarningYellow else Color.Red
-                    Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .height(4.dp)
-                            .weight(1f)
-                            .background(DarkSurface, RoundedCornerShape(2.dp))
-                    ) {
+                if (isEditing) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("强度: ", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        val strengthText = if (password.length > 10) "强" else if (password.length > 6) "中" else "弱"
+                        val strengthColor = if (password.length > 10) SuccessGreen else if (password.length > 6) WarningYellow else Color.Red
+                        Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(if (password.length > 10) 0.8f else if (password.length > 6) 0.5f else 0.2f)
                                 .height(4.dp)
-                                .background(strengthColor, RoundedCornerShape(2.dp))
-                        )
+                                .weight(1f)
+                                .background(DarkSurface, RoundedCornerShape(2.dp))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(if (password.length > 10) 0.8f else if (password.length > 6) 0.5f else 0.2f)
+                                    .height(4.dp)
+                                    .background(strengthColor, RoundedCornerShape(2.dp))
+                            )
+                        }
                     }
-                }
 
-                if (isNewPassword) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = { showGeneratorDialog = true },
@@ -326,6 +350,7 @@ fun PasswordDetailScreen(
                 onValueChange = { website = it },
                 label = "网址",
                 placeholder = "https://example.com",
+                readOnly = !isEditing,
                 onCopy = { clipboardManager.setText(AnnotatedString(website)) }
             )
 
@@ -336,6 +361,7 @@ fun PasswordDetailScreen(
                 onValueChange = { notes = it },
                 label = "备注",
                 placeholder = "其他信息...",
+                readOnly = !isEditing,
                 singleLine = false
             )
 
@@ -352,17 +378,19 @@ fun PasswordDetailScreen(
                     Text(sdf.format(Date(updatedAt)), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0)
-                        onPasswordSaved()
-                    },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
-                ) {
-                    Text("保存修改", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                if (isEditing) {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = {
+                            viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0)
+                            isEditing = false
+                        },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
+                    ) {
+                        Text("保存修改", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -414,6 +442,7 @@ fun DetailTextField(
     label: String,
     placeholder: String,
     singleLine: Boolean = true,
+    readOnly: Boolean = false,
     onCopy: (() -> Unit)? = null
 ) {
     Column(
@@ -430,6 +459,7 @@ fun DetailTextField(
                 placeholder = { Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 modifier = Modifier.weight(1f),
                 singleLine = singleLine,
+                readOnly = readOnly,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
