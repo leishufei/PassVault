@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "PasswordManager"
+rootProject.name = "PassVault"
 include(":app")

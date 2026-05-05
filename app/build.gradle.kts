@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.passwordmanager"
+    namespace = "com.example.passvault"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.passwordmanager"
+        applicationId = "com.example.passvault"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
