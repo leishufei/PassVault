@@ -6,7 +6,7 @@ import com.example.passwordmanager.data.model.PasswordEntry
 
 @Database(
     entities = [PasswordEntry::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class PasswordDatabase : RoomDatabase() {

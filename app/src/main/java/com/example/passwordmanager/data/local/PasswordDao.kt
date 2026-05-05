@@ -27,6 +27,12 @@ interface PasswordDao {
     @Update
     suspend fun updatePassword(entry: PasswordEntry)
 
+    @Query("UPDATE password_entries SET isFavorite = :isFavorite WHERE id = :id")
+    suspend fun updateFavoriteStatus(id: Long, isFavorite: Boolean)
+
+    @Query("UPDATE password_entries SET lastUsedAt = :timestamp WHERE id = :id")
+    suspend fun updateLastUsed(id: Long, timestamp: Long)
+
     @Delete
     suspend fun deletePassword(entry: PasswordEntry)
 

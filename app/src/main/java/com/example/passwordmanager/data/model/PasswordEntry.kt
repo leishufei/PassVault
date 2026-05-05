@@ -13,6 +13,10 @@ data class PasswordEntry(
     val passwordIv: ByteArray,
     val website: String = "",
     val notes: String = "",
+    val isFavorite: Boolean = false,
+    val lastUsedAt: Long = 0L,
+    val iconColor: Int = 0,
+    val strength: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) {

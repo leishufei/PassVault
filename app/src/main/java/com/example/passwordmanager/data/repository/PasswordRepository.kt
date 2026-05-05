@@ -36,7 +36,9 @@ class PasswordRepository @Inject constructor(
         username: String,
         password: String,
         website: String = "",
-        notes: String = ""
+        notes: String = "",
+        iconColor: Int = 0,
+        strength: Int = 0
     ): Long {
         val encryptedData = cryptoManager.encrypt(password)
         val entry = PasswordEntry(
@@ -45,7 +47,9 @@ class PasswordRepository @Inject constructor(
             encryptedPassword = encryptedData.ciphertext,
             passwordIv = encryptedData.iv,
             website = website,
-            notes = notes
+            notes = notes,
+            iconColor = iconColor,
+            strength = strength
         )
         return passwordDao.insertPassword(entry)
     }
@@ -56,7 +60,10 @@ class PasswordRepository @Inject constructor(
         username: String,
         password: String,
         website: String = "",
-        notes: String = ""
+        notes: String = "",
+        isFavorite: Boolean = false,
+        iconColor: Int = 0,
+        strength: Int = 0
     ) {
         val encryptedData = cryptoManager.encrypt(password)
         val entry = PasswordEntry(
@@ -67,9 +74,20 @@ class PasswordRepository @Inject constructor(
             passwordIv = encryptedData.iv,
             website = website,
             notes = notes,
+            isFavorite = isFavorite,
+            iconColor = iconColor,
+            strength = strength,
             updatedAt = System.currentTimeMillis()
         )
         passwordDao.updatePassword(entry)
+    }
+
+    suspend fun updateFavoriteStatus(id: Long, isFavorite: Boolean) {
+        passwordDao.updateFavoriteStatus(id, isFavorite)
+    }
+
+    suspend fun updateLastUsed(id: Long) {
+        passwordDao.updateLastUsed(id, System.currentTimeMillis())
     }
 
     suspend fun deletePassword(id: Long) {
@@ -88,6 +106,10 @@ class PasswordRepository @Inject constructor(
             password = decryptedPassword,
             website = website,
             notes = notes,
+            isFavorite = isFavorite,
+            lastUsedAt = lastUsedAt,
+            iconColor = iconColor,
+            strength = strength,
             createdAt = createdAt,
             updatedAt = updatedAt
         )
@@ -101,6 +123,10 @@ data class PasswordEntryDisplay(
     val password: String,
     val website: String,
     val notes: String,
+    val isFavorite: Boolean,
+    val lastUsedAt: Long,
+    val iconColor: Int,
+    val strength: Int,
     val createdAt: Long,
     val updatedAt: Long
 )

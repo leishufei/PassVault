@@ -59,7 +59,7 @@ fun PasswordManagerAppContent() {
         composable("setup") {
             LaunchedEffect(authState.isAuthenticated) {
                 if (authState.isAuthenticated) {
-                    navController.navigate("passwords") {
+                    navController.navigate("main") {
                         popUpTo("setup") { inclusive = true }
                     }
                 }
@@ -76,7 +76,7 @@ fun PasswordManagerAppContent() {
         composable("login") {
             LaunchedEffect(authState.isAuthenticated) {
                 if (authState.isAuthenticated) {
-                    navController.navigate("passwords") {
+                    navController.navigate("main") {
                         popUpTo("login") { inclusive = true }
                     }
                 }
@@ -94,17 +94,8 @@ fun PasswordManagerAppContent() {
             )
         }
 
-        composable("passwords") {
-            val passwordViewModel: PasswordViewModel = hiltViewModel()
-            PasswordListScreen(
-                viewModel = passwordViewModel,
-                onPasswordClick = { id ->
-                    navController.navigate("password_detail/$id")
-                },
-                onAddClick = {
-                    navController.navigate("password_detail/new")
-                }
-            )
+        composable("main") {
+            com.example.passwordmanager.ui.main.MainScreen(rootNavController = navController)
         }
 
         composable(
