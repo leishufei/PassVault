@@ -12,3 +12,6 @@
 -keepclassmembers class * extends androidx.room.RoomDatabase {
     *;
 }
+
+-dontwarn com.google.errorprone.annotations.**
+-dontwarn javax.annotation.**

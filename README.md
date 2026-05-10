@@ -1,6 +1,6 @@
-# SafeVault Password Manager
+# PassVault
 
-SafeVault 是一款基于现代 Android 技术栈打造的极客风离线密码管理器。它采用了纯净的**深色模式 (Deep Dark Mode)** 设计语言，旨在为用户提供美观、流畅且高安全性的密码存储体验。
+PassVault 是一款基于现代 Android 技术栈打造的极客风离线密码管理器。它采用了纯净的**深色模式 (Deep Dark Mode)** 设计语言，旨在为用户提供美观、流畅且高安全性的密码存储体验。
 
 ## 🎨 界面与设计
 - **极致的深色美学**：全局采用 `#0F111A` 深黑背景，辅以 `#8B5CF6` (Primary Purple) 作为主要强调色。
@@ -42,7 +42,7 @@ SafeVault 是一款基于现代 Android 技术栈打造的极客风离线密码�
 
 ## 📂 项目结构
 ```text
-com.example.passwordmanager
+com.example.passvault
 ├── data/           # 数据层 (Entity, Dao, Database, Repository)
 ├── domain/         # 领域逻辑 (AuthManager, PasswordGenerator)
 ├── ui/             # 视图表现层
