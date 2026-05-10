@@ -30,6 +30,9 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
+    private val _shouldLockNow = MutableStateFlow(false)
+    val shouldLockNow: StateFlow<Boolean> = _shouldLockNow.asStateFlow()
+
     init {
         loadSettings()
         loadPasswordStatistics()
@@ -65,6 +68,15 @@ class SettingsViewModel @Inject constructor(
     fun setAutoLockTime(time: String) {
         masterPasswordManager.setAutoLockTime(time)
         _uiState.value = _uiState.value.copy(autoLockTime = time)
+
+        // 如果设置为"立即"，触发锁定
+        if (time == "立即") {
+            _shouldLockNow.value = true
+        }
+    }
+
+    fun resetLockNowFlag() {
+        _shouldLockNow.value = false
     }
 
     fun changeMasterPassword(oldPassword: String, newPassword: String): Result<Unit> {

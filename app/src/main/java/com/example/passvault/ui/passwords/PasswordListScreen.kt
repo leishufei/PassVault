@@ -1,6 +1,7 @@
 package com.example.passvault.ui.passwords
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,17 +23,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -57,8 +57,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.ui.theme.BrandColors
+import com.example.passvault.ui.theme.CardBackground
+import com.example.passvault.ui.theme.CardBorder
 import com.example.passvault.ui.theme.DarkSurface
+import com.example.passvault.ui.theme.PrimaryIndigo
 import com.example.passvault.ui.theme.PrimaryPurple
+import com.example.passvault.ui.theme.TextSecondary
+import com.example.passvault.ui.theme.TextTertiary
 import com.example.passvault.ui.theme.WarningYellow
 import kotlin.math.abs
 
@@ -71,173 +76,203 @@ fun PasswordListScreen(
     val passwords by viewModel.passwords.collectAsState()
     val filterMode by viewModel.filterMode.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-    
+
     var isSearchActive by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top Bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            if (isSearchActive) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.searchPasswords(it) },
-                    placeholder = { Text("搜索密码...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = DarkSurface,
-                        unfocusedContainerColor = DarkSurface,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(24.dp),
-                    trailingIcon = {
-                        IconButton(onClick = { 
-                            isSearchActive = false 
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (isSearchActive) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.searchPasswords(it) },
+                        placeholder = { Text("搜索密码...", color = TextTertiary) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White.copy(alpha = 0.07f),
+                            unfocusedContainerColor = Color.White.copy(alpha = 0.07f),
+                            focusedBorderColor = Color.White.copy(alpha = 0.1f),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "取消",
+                        color = PrimaryPurple,
+                        fontSize = 14.sp,
+                        modifier = Modifier.clickable {
+                            isSearchActive = false
                             viewModel.searchPasswords("")
-                        }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close Search", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    )
+                } else {
+                    Text(
+                        text = "密码",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.07f))
+                                .clickable { isSearchActive = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFFB0B0CC), modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryPurple)
+                                .clickable { onAddClick() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(20.dp))
                         }
                     }
-                )
+                }
+            }
+
+            // Filter Tabs
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    PillFilterChip(
+                        text = "全部",
+                        icon = Icons.Default.Lock,
+                        selected = filterMode == PasswordFilter.ALL,
+                        onClick = { viewModel.setFilter(PasswordFilter.ALL) }
+                    )
+                }
+                item {
+                    PillFilterChip(
+                        text = "收藏",
+                        icon = Icons.Default.StarBorder,
+                        selected = filterMode == PasswordFilter.FAVORITES,
+                        onClick = { viewModel.setFilter(PasswordFilter.FAVORITES) }
+                    )
+                }
+                item {
+                    PillFilterChip(
+                        text = "近期使用",
+                        icon = Icons.Default.History,
+                        selected = filterMode == PasswordFilter.RECENT,
+                        onClick = { viewModel.setFilter(PasswordFilter.RECENT) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Password List
+            if (passwords.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(160.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("暂无密码记录", color = TextTertiary, fontSize = 14.sp)
+                }
             } else {
-                Text(
-                    text = "密码",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { isSearchActive = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Search",
-                            tint = Color.White
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(passwords, key = { it.id }) { password ->
+                        PasswordListItem(
+                            password = password,
+                            onClick = {
+                                viewModel.markAsUsed(password.id)
+                                onPasswordClick(password.id)
+                            },
+                            onFavoriteClick = {
+                                viewModel.toggleFavorite(password.id, !password.isFavorite)
+                            },
+                            onDelete = {
+                                viewModel.deletePassword(password.id)
+                            }
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryPurple)
-                            .clickable { onAddClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add",
-                            tint = Color.White
-                        )
-                    }
+                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }
 
-        // Filter Chips
-        LazyRow(
+        // FAB
+        FloatingActionButton(
+            onClick = onAddClick,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .align(Alignment.BottomEnd)
+                .padding(end = 24.dp, bottom = 24.dp)
+                .size(56.dp),
+            shape = CircleShape,
+            containerColor = PrimaryPurple
         ) {
-            item {
-                CustomFilterChip(
-                    text = "全部",
-                    icon = Icons.Default.List,
-                    selected = filterMode == PasswordFilter.ALL,
-                    onClick = { viewModel.setFilter(PasswordFilter.ALL) }
-                )
-            }
-            item {
-                CustomFilterChip(
-                    text = "收藏",
-                    icon = Icons.Default.StarBorder,
-                    selected = filterMode == PasswordFilter.FAVORITES,
-                    onClick = { viewModel.setFilter(PasswordFilter.FAVORITES) }
-                )
-            }
-            item {
-                CustomFilterChip(
-                    text = "近期使用",
-                    icon = Icons.Default.History,
-                    selected = filterMode == PasswordFilter.RECENT,
-                    onClick = { viewModel.setFilter(PasswordFilter.RECENT) }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Password List
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(passwords, key = { it.id }) { password ->
-                PasswordListItem(
-                    password = password,
-                    onClick = {
-                        viewModel.markAsUsed(password.id)
-                        onPasswordClick(password.id)
-                    },
-                    onFavoriteClick = {
-                        viewModel.toggleFavorite(password.id, !password.isFavorite)
-                    },
-                    onDelete = {
-                        viewModel.deletePassword(password.id)
-                    }
-                )
-            }
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(26.dp))
         }
     }
 }
 
 @Composable
-fun CustomFilterChip(
+fun PillFilterChip(
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(text) },
-        leadingIcon = {
-            Icon(imageVector = icon, contentDescription = null, modifier = Modifier.size(16.dp))
-        },
-        shape = RoundedCornerShape(12.dp),
-        colors = FilterChipDefaults.filterChipColors(
-            containerColor = DarkSurface,
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = PrimaryPurple.copy(alpha = 0.2f),
-            selectedLabelColor = PrimaryPurple,
-            selectedLeadingIconColor = PrimaryPurple
-        ),
-        border = null
-    )
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) PrimaryPurple else Color.White.copy(alpha = 0.07f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(13.dp),
+            tint = if (selected) Color.White else TextSecondary
+        )
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) Color.White else TextSecondary
+        )
+    }
 }
 
 @Composable
@@ -250,103 +285,96 @@ fun PasswordListItem(
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
 
-    Card(
+    val colorIndex = if (password.iconColor != 0) password.iconColor % BrandColors.size else abs(password.title.hashCode()) % BrandColors.size
+    val bgColor = BrandColors[colorIndex]
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Icon
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(bgColor),
+            contentAlignment = Alignment.Center
         ) {
-            // Icon
-            val colorIndex = if (password.iconColor != 0) password.iconColor else abs(password.title.hashCode()) % BrandColors.size
-            val bgColor = BrandColors[colorIndex]
-            
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(bgColor.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
+            Text(
+                text = password.title.take(1).uppercase(),
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Text
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = password.title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = password.username,
+                fontSize = 13.sp,
+                color = TextSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        // Actions
+        IconButton(onClick = onFavoriteClick, modifier = Modifier.size(32.dp)) {
+            Icon(
+                imageVector = if (password.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = "Favorite",
+                tint = if (password.isFavorite) WarningYellow else TextTertiary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        Box {
+            IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = TextTertiary, modifier = Modifier.size(16.dp))
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
             ) {
-                Text(
-                    text = password.title.take(1).uppercase(),
-                    color = bgColor,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                DropdownMenuItem(
+                    text = { Text("复制密码", color = Color.White, fontSize = 14.sp) },
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(password.password))
+                        showMenu = false
+                    }
                 )
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Text info
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = password.title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                DropdownMenuItem(
+                    text = { Text("复制用户名", color = Color.White, fontSize = 14.sp) },
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(password.username))
+                        showMenu = false
+                    }
                 )
-                Text(
-                    text = password.username,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                DropdownMenuItem(
+                    text = { Text("删除", color = Color(0xFFEF4444), fontSize = 14.sp) },
+                    onClick = {
+                        onDelete()
+                        showMenu = false
+                    }
                 )
-            }
-
-            // Actions
-            IconButton(onClick = onFavoriteClick) {
-                Icon(
-                    imageVector = if (password.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                    contentDescription = "Favorite",
-                    tint = if (password.isFavorite) WarningYellow else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "More",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    modifier = Modifier.background(DarkSurface)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("复制密码", color = Color.White) },
-                        onClick = {
-                            clipboardManager.setText(AnnotatedString(password.password))
-                            showMenu = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("复制用户名", color = Color.White) },
-                        onClick = {
-                            clipboardManager.setText(AnnotatedString(password.username))
-                            showMenu = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("删除", color = Color.Red) },
-                        onClick = {
-                            onDelete()
-                            showMenu = false
-                        }
-                    )
-                }
             }
         }
     }

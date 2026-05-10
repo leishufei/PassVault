@@ -12,7 +12,7 @@ import androidx.core.view.WindowCompat
 private val SafeVaultColorScheme = darkColorScheme(
     primary = PrimaryPurple,
     onPrimary = TextPrimary,
-    primaryContainer = PrimaryPurpleDark,
+    primaryContainer = PrimaryIndigo,
     secondary = SuccessGreen,
     onSecondary = TextPrimary,
     background = DarkBackground,

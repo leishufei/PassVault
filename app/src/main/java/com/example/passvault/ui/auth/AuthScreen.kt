@@ -1,6 +1,7 @@
 package com.example.passvault.ui.auth
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -42,28 +43,30 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.passvault.ui.theme.DarkSurface
+import com.example.passvault.ui.theme.PrimaryIndigo
 import com.example.passvault.ui.theme.PrimaryPurple
-import com.example.passvault.ui.theme.PrimaryPurpleDark
+import com.example.passvault.ui.theme.PrimaryPurpleLight
+import com.example.passvault.ui.theme.TextSecondary
+import com.example.passvault.ui.theme.TextTertiary
 
 @Composable
 fun LogoHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
+                .size(96.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .background(
-                    Brush.verticalGradient(
-                        colors = listOf(PrimaryPurple, PrimaryPurpleDark)
+                    Brush.linearGradient(
+                        colors = listOf(PrimaryPurple, PrimaryIndigo)
                     )
                 ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Lock,
+                imageVector = Icons.Default.Shield,
                 contentDescription = null,
-                modifier = Modifier.size(50.dp),
+                modifier = Modifier.size(44.dp),
                 tint = Color.White
             )
         }
@@ -71,18 +74,19 @@ fun LogoHeader() {
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "SafeVault",
-            fontSize = 32.sp,
+            text = "PassVault",
+            fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = Color.White,
+            letterSpacing = 0.5.sp
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = "安全存储 · 随时访问",
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = TextSecondary
         )
     }
 }
@@ -93,12 +97,13 @@ fun AuthTextField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     isPasswordVisible: Boolean,
-    onVisibilityChange: () -> Unit
+    onVisibilityChange: () -> Unit,
+    isError: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder) },
+        placeholder = { Text(placeholder, color = TextSecondary) },
         modifier = Modifier.fillMaxWidth(),
         visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         trailingIcon = {
@@ -106,18 +111,20 @@ fun AuthTextField(
                 Icon(
                     imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = TextSecondary
                 )
             }
         },
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = DarkSurface,
-            unfocusedContainerColor = DarkSurface,
-            disabledContainerColor = DarkSurface,
-            focusedBorderColor = PrimaryPurple,
-            unfocusedBorderColor = Color.Transparent,
+            focusedContainerColor = Color.White.copy(alpha = 0.07f),
+            unfocusedContainerColor = Color.White.copy(alpha = 0.07f),
+            disabledContainerColor = Color.White.copy(alpha = 0.07f),
+            focusedBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.White.copy(alpha = 0.1f),
+            unfocusedBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.White.copy(alpha = 0.1f),
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
         )
     )
 }
@@ -135,7 +142,7 @@ fun SetupScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
+            .padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -147,7 +154,8 @@ fun SetupScreen(
             onValueChange = { password = it },
             placeholder = "设置主密码",
             isPasswordVisible = passwordVisible,
-            onVisibilityChange = { passwordVisible = !passwordVisible }
+            onVisibilityChange = { passwordVisible = !passwordVisible },
+            isError = error != null
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -157,7 +165,8 @@ fun SetupScreen(
             onValueChange = { confirmPassword = it },
             placeholder = "确认主密码",
             isPasswordVisible = passwordVisible,
-            onVisibilityChange = { passwordVisible = !passwordVisible }
+            onVisibilityChange = { passwordVisible = !passwordVisible },
+            isError = error != null
         )
 
         error?.let {
@@ -177,10 +186,20 @@ fun SetupScreen(
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
             enabled = password.isNotEmpty() && confirmPassword.isNotEmpty()
         ) {
-            Text("开始使用", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo)),
+                        RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("开始使用", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+            }
         }
     }
 }
@@ -195,9 +214,11 @@ fun LoginScreen(
 ) {
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var hasAutoTriggeredBiometric by remember { mutableStateOf(false) }
 
     LaunchedEffect(isBiometricAvailable, isBiometricEnabled) {
-        if (isBiometricAvailable && isBiometricEnabled) {
+        if (isBiometricAvailable && isBiometricEnabled && !hasAutoTriggeredBiometric) {
+            hasAutoTriggeredBiometric = true
             onBiometricClick()
         }
     }
@@ -206,19 +227,22 @@ fun LoginScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(horizontal = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.weight(0.15f))
+
         LogoHeader()
-        Spacer(modifier = Modifier.height(48.dp))
+
+        Spacer(modifier = Modifier.weight(0.1f))
 
         AuthTextField(
             value = password,
             onValueChange = { password = it },
             placeholder = "输入主密码",
             isPasswordVisible = passwordVisible,
-            onVisibilityChange = { passwordVisible = !passwordVisible }
+            onVisibilityChange = { passwordVisible = !passwordVisible },
+            isError = error != null
         )
 
         error?.let {
@@ -238,36 +262,68 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent
+            ),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 0.dp,
+                pressedElevation = 0.dp,
+                disabledElevation = 0.dp,
+                hoveredElevation = 0.dp,
+                focusedElevation = 0.dp
+            ),
             enabled = password.isNotEmpty()
         ) {
-            Text("解锁", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
-
-        if (isBiometricAvailable && isBiometricEnabled) {
-            Spacer(modifier = Modifier.height(48.dp))
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onBiometricClick() }) {
-                Icon(
-                    imageVector = Icons.Default.Fingerprint,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("使用指纹解锁", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo)),
+                        RoundedCornerShape(16.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("解锁", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.weight(0.1f))
+
+        if (isBiometricAvailable && isBiometricEnabled) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { onBiometricClick() }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryPurple.copy(alpha = 0.15f))
+                        .border(1.5.dp, PrimaryPurple.copy(alpha = 0.4f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Fingerprint,
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = PrimaryPurple
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("使用指纹解锁", color = TextSecondary, fontSize = 13.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "忘记主密码？",
+            text = "忘记主密码?",
             color = PrimaryPurple,
+            fontSize = 14.sp,
             modifier = Modifier
-                .padding(bottom = 16.dp)
-                .clickable { /* TODO */ },
-            fontWeight = FontWeight.Medium
+                .padding(bottom = 32.dp)
+                .clickable { }
         )
     }
 }

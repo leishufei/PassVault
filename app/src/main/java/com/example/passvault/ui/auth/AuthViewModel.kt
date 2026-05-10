@@ -99,6 +99,13 @@ class AuthViewModel @Inject constructor(
             onError = { onBiometricError(it) }
         )
     }
+
+    fun logout() {
+        _uiState.value = _uiState.value.copy(
+            isAuthenticated = false,
+            error = null
+        )
+    }
 }
 
 data class AuthUiState(
