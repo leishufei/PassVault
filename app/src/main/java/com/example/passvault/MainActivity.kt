@@ -117,7 +117,15 @@ fun PassVaultAppContent() {
         }
 
         composable("main") {
-            com.example.passvault.ui.main.MainScreen(rootNavController = navController)
+            com.example.passvault.ui.main.MainScreen(
+                rootNavController = navController,
+                onLock = {
+                    authViewModel.logout()
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(

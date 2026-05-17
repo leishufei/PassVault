@@ -58,8 +58,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
-import com.example.passvault.ui.auth.AuthViewModel
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
 import com.example.passvault.ui.theme.DarkSurface
@@ -71,9 +69,8 @@ import com.example.passvault.ui.theme.WarningYellow
 
 @Composable
 fun SettingsScreen(
-    rootNavController: NavHostController,
-    viewModel: SettingsViewModel = hiltViewModel(),
-    authViewModel: AuthViewModel = hiltViewModel()
+    onLock: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
@@ -81,11 +78,8 @@ fun SettingsScreen(
 
     LaunchedEffect(shouldLockNow) {
         if (shouldLockNow) {
-            authViewModel.logout()
-            rootNavController.navigate("login") {
-                popUpTo(0) { inclusive = true }
-            }
             viewModel.resetLockNowFlag()
+            onLock()
         }
     }
 
@@ -239,12 +233,7 @@ fun SettingsScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color(0xFFEF4444).copy(alpha = 0.12f))
                     .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.25f), RoundedCornerShape(16.dp))
-                    .clickable {
-                        authViewModel.logout()
-                        rootNavController.navigate("login") {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    },
+                    .clickable { onLock() },
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
