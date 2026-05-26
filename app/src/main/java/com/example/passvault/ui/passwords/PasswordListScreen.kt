@@ -15,12 +15,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
@@ -80,6 +80,7 @@ fun PasswordListScreen(
     val categories by viewModel.categories.collectAsState()
 
     var isSearchActive by remember { mutableStateOf(false) }
+    var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -144,59 +145,133 @@ fun PasswordListScreen(
                         ) {
                             Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFFB0B0CC), modifier = Modifier.size(18.dp))
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryPurple)
-                                .clickable { onAddClick() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
                     }
                 }
             }
 
             // Filter Tabs
-            LazyRow(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item {
-                    PillFilterChip(
-                        text = "全部",
-                        icon = Icons.Default.Lock,
-                        selected = filterMode == PasswordFilter.ALL,
-                        onClick = { viewModel.setFilter(PasswordFilter.ALL) }
-                    )
+                // Category dropdown (replaces "全部" button)
+                Box {
+                    val currentCategoryLabel = when (filterMode) {
+                        is PasswordFilter.CATEGORY -> {
+                            val cat = categories.find { it.id == (filterMode as PasswordFilter.CATEGORY).categoryId }
+                            cat?.name ?: "全部"
+                        }
+                        PasswordFilter.ALL -> "全部"
+                        else -> "全部"
+                    }
+                    val isActive = filterMode == PasswordFilter.ALL || filterMode is PasswordFilter.CATEGORY
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (isActive) PrimaryPurple else Color.White.copy(alpha = 0.07f))
+                            .clickable { isCategoryDropdownExpanded = true }
+                            .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = null,
+                            modifier = Modifier.size(13.dp),
+                            tint = if (isActive) Color.White else TextSecondary
+                        )
+                        Text(
+                            text = currentCategoryLabel,
+                            fontSize = 12.sp,
+                            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                            color = if (isActive) Color.White else TextSecondary
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (isActive) Color.White else TextSecondary
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = isCategoryDropdownExpanded,
+                        onDismissRequest = { isCategoryDropdownExpanded = false },
+                        modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = if (filterMode == PasswordFilter.ALL) PrimaryPurple else TextSecondary
+                                    )
+                                    Text(
+                                        "全部",
+                                        color = if (filterMode == PasswordFilter.ALL) PrimaryPurple else Color.White,
+                                        fontSize = 14.sp,
+                                        fontWeight = if (filterMode == PasswordFilter.ALL) FontWeight.SemiBold else FontWeight.Normal
+                                    )
+                                }
+                            },
+                            onClick = {
+                                viewModel.setFilter(PasswordFilter.ALL)
+                                isCategoryDropdownExpanded = false
+                            }
+                        )
+                        categories.forEach { category ->
+                            val isSelected = filterMode is PasswordFilter.CATEGORY &&
+                                    (filterMode as PasswordFilter.CATEGORY).categoryId == category.id
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(BrandColors[category.color % BrandColors.size])
+                                        )
+                                        Text(
+                                            category.name,
+                                            color = if (isSelected) PrimaryPurple else Color.White,
+                                            fontSize = 14.sp,
+                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                        )
+                                    }
+                                },
+                                onClick = {
+                                    viewModel.setFilter(PasswordFilter.CATEGORY(category.id))
+                                    isCategoryDropdownExpanded = false
+                                }
+                            )
+                        }
+                    }
                 }
-                item {
-                    PillFilterChip(
-                        text = "收藏",
-                        icon = Icons.Default.StarBorder,
-                        selected = filterMode == PasswordFilter.FAVORITES,
-                        onClick = { viewModel.setFilter(PasswordFilter.FAVORITES) }
-                    )
-                }
-                item {
-                    PillFilterChip(
-                        text = "近期使用",
-                        icon = Icons.Default.History,
-                        selected = filterMode == PasswordFilter.RECENT,
-                        onClick = { viewModel.setFilter(PasswordFilter.RECENT) }
-                    )
-                }
-                items(categories) { category ->
-                    CategoryFilterChip(
-                        category = category,
-                        selected = filterMode is PasswordFilter.CATEGORY && (filterMode as PasswordFilter.CATEGORY).categoryId == category.id,
-                        onClick = { viewModel.setFilter(PasswordFilter.CATEGORY(category.id)) }
-                    )
-                }
+
+                PillFilterChip(
+                    text = "收藏",
+                    icon = Icons.Default.StarBorder,
+                    selected = filterMode == PasswordFilter.FAVORITES,
+                    onClick = { viewModel.setFilter(PasswordFilter.FAVORITES) }
+                )
+
+                PillFilterChip(
+                    text = "近期使用",
+                    icon = Icons.Default.History,
+                    selected = filterMode == PasswordFilter.RECENT,
+                    onClick = { viewModel.setFilter(PasswordFilter.RECENT) }
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))

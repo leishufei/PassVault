@@ -90,19 +90,19 @@ fun SettingsScreen(
 
     val autoLockOptions = listOf("立即", "1分钟", "5分钟", "10分钟", "永不")
 
-    val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+    val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) {
-            viewModel.exportBackup(uri)
-                .onSuccess { Toast.makeText(context, "备份已导出", Toast.LENGTH_SHORT).show() }
-                .onFailure { Toast.makeText(context, "备份失败: ${it.message}", Toast.LENGTH_SHORT).show() }
+            viewModel.exportCsv(uri)
+                .onSuccess { Toast.makeText(context, "密码已导出", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, "导出失败: ${it.message}", Toast.LENGTH_SHORT).show() }
         }
     }
 
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            viewModel.importBackup(uri)
-                .onSuccess { Toast.makeText(context, "数据恢复成功", Toast.LENGTH_SHORT).show() }
-                .onFailure { Toast.makeText(context, "恢复失败: ${it.message}", Toast.LENGTH_SHORT).show() }
+            viewModel.importCsv(uri)
+                .onSuccess { Toast.makeText(context, "数据导入成功", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, "导入失败: ${it.message}", Toast.LENGTH_SHORT).show() }
         }
     }
 
@@ -188,18 +188,18 @@ fun SettingsScreen(
                     icon = Icons.Default.Backup,
                     iconBg = Color(0xFF0C3025),
                     iconTint = Color(0xFF34D399),
-                    title = "备份",
-                    subtitle = "导出加密数据",
-                    onClick = { backupLauncher.launch("PassVault_Backup.json") }
+                    title = "导出密码",
+                    subtitle = "导出为 CSV 格式",
+                    onClick = { backupLauncher.launch("PassVault_Backup.csv") }
                 )
                 SettingDivider()
                 SettingItem(
                     icon = Icons.Default.Restore,
                     iconBg = Color(0xFF0C2040),
                     iconTint = Color(0xFF60A5FA),
-                    title = "备份恢复",
-                    subtitle = "导入备份数据",
-                    onClick = { restoreLauncher.launch(arrayOf("application/json")) }
+                    title = "导入密码",
+                    subtitle = "从 CSV 导入密码",
+                    onClick = { restoreLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain")) }
                 )
             }
 

@@ -105,12 +105,12 @@ fun PasswordDetailScreen(
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showGeneratorDialog by remember { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
 
     val isNewPassword = passwordId == null
     var isEditing by remember { mutableStateOf(isNewPassword) }
 
     val clipboardManager = LocalClipboardManager.current
+    val categories by viewModel.categories.collectAsState()
 
     LaunchedEffect(passwordId) {
         passwordId?.let { id ->
@@ -193,31 +193,15 @@ fun PasswordDetailScreen(
                     }
                 }
                 if (!isNewPassword) {
-                    Box {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.07f))
-                                .clickable { showMenu = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color(0xFFB0B0CC), modifier = Modifier.size(18.dp))
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("编辑", color = Color(0xFFD0D0F0), fontSize = 14.sp) },
-                                onClick = { showMenu = false; isEditing = true }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("删除", color = Color(0xFFEF4444), fontSize = 14.sp) },
-                                onClick = { showMenu = false; showDeleteDialog = true }
-                            )
-                        }
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.07f))
+                            .clickable { showDeleteDialog = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
                     }
                 }
             }
@@ -276,7 +260,6 @@ fun PasswordDetailScreen(
 
             // Fields
             if (isEditing) {
-                val categories by viewModel.categories.collectAsState()
                 EditableFields(
                     title = title, onTitleChange = { title = it },
                     username = username, onUsernameChange = { username = it },
@@ -318,6 +301,43 @@ fun PasswordDetailScreen(
                 }
             } else {
                 // View mode - field cards
+                // Category Card
+                val selectedCategory = categories.find { it.id == categoryId }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(CardBackground)
+                        .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                        .padding(16.dp)
+                ) {
+                    Text("分类", fontSize = 12.sp, color = TextSecondary)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (selectedCategory != null) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(BrandColors[selectedCategory.color % BrandColors.size])
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = selectedCategory.name,
+                                fontSize = 14.sp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                text = "未分类",
+                                fontSize = 14.sp,
+                                color = TextTertiary
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+
                 FieldCard(label = "用户名", value = username, onCopy = { clipboardManager.setText(AnnotatedString(username)) })
                 Spacer(modifier = Modifier.height(12.dp))
                 PasswordFieldCard(
