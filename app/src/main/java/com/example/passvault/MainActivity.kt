@@ -25,6 +25,8 @@ import com.example.passvault.ui.auth.SetupScreen
 import com.example.passvault.ui.passwords.PasswordDetailScreen
 import com.example.passvault.ui.passwords.PasswordListScreen
 import com.example.passvault.ui.passwords.PasswordViewModel
+import com.example.passvault.ui.settings.CategoryManagementScreen
+import com.example.passvault.ui.settings.CategoryViewModel
 import com.example.passvault.ui.theme.PassVaultTheme
 import com.example.passvault.domain.auth.AuthManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -143,6 +145,14 @@ fun PassVaultAppContent() {
                 viewModel = passwordViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onPasswordSaved = { navController.popBackStack() }
+            )
+        }
+
+        composable("category_management") {
+            val categoryViewModel: CategoryViewModel = hiltViewModel()
+            CategoryManagementScreen(
+                viewModel = categoryViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

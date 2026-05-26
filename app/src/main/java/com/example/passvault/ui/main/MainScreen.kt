@@ -86,7 +86,12 @@ fun MainScreen(
                 GeneratorScreen()
             }
             composable(BottomNavItem.Settings.route) {
-                SettingsScreen(onLock = onLock)
+                SettingsScreen(
+                    onLock = onLock,
+                    onNavigateToCategoryManagement = {
+                        rootNavController.navigate("category_management")
+                    }
+                )
             }
         }
     }

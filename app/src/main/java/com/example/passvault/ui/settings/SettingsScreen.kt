@@ -70,6 +70,7 @@ import com.example.passvault.ui.theme.WarningYellow
 @Composable
 fun SettingsScreen(
     onLock: () -> Unit,
+    onNavigateToCategoryManagement: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -199,6 +200,26 @@ fun SettingsScreen(
                     title = "备份恢复",
                     subtitle = "导入备份数据",
                     onClick = { restoreLauncher.launch(arrayOf("application/json")) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            SectionTitle("管理")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            ) {
+                SettingItem(
+                    icon = Icons.Default.Security,
+                    iconBg = Color(0xFF1E1A3D),
+                    iconTint = Color(0xFF818CF8),
+                    title = "分类管理",
+                    subtitle = "管理密码分类",
+                    onClick = onNavigateToCategoryManagement
                 )
             }
 

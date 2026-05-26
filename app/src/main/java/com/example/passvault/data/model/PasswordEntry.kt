@@ -17,6 +17,7 @@ data class PasswordEntry(
     val lastUsedAt: Long = 0L,
     val iconColor: Int = 0,
     val strength: Int = 0,
+    val categoryId: Long = 0,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 ) {

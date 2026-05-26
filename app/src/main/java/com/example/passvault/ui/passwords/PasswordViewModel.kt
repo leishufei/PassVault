@@ -2,6 +2,8 @@ package com.example.passvault.ui.passwords
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.passvault.data.model.Category
+import com.example.passvault.data.repository.CategoryRepository
 import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.domain.generator.PasswordConfig
@@ -16,23 +18,34 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class PasswordFilter {
-    ALL, FAVORITES, RECENT
+sealed class PasswordFilter {
+    object ALL : PasswordFilter()
+    object FAVORITES : PasswordFilter()
+    object RECENT : PasswordFilter()
+    data class CATEGORY(val categoryId: Long) : PasswordFilter()
 }
 
 @HiltViewModel
 class PasswordViewModel @Inject constructor(
     private val repository: PasswordRepository,
+    private val categoryRepository: CategoryRepository,
     private val passwordGenerator: PasswordGenerator
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _filterMode = MutableStateFlow(PasswordFilter.ALL)
+    private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.ALL)
     val filterMode: StateFlow<PasswordFilter> = _filterMode.asStateFlow()
 
     private val _rawPasswords = MutableStateFlow<List<PasswordEntryDisplay>>(emptyList())
+
+    val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     val passwords: StateFlow<List<PasswordEntryDisplay>> = combine(
         _rawPasswords,
@@ -53,6 +66,7 @@ class PasswordViewModel @Inject constructor(
             PasswordFilter.ALL -> filtered
             PasswordFilter.FAVORITES -> filtered.filter { it.isFavorite }
             PasswordFilter.RECENT -> filtered.sortedByDescending { it.lastUsedAt }
+            is PasswordFilter.CATEGORY -> filtered.filter { it.categoryId == filter.categoryId }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -100,13 +114,14 @@ class PasswordViewModel @Inject constructor(
         website: String,
         notes: String,
         iconColor: Int = 0,
-        strength: Int = 0
+        strength: Int = 0,
+        categoryId: Long = 0
     ) {
         viewModelScope.launch {
             if (id == null) {
-                repository.insertPassword(title, username, password, website, notes, iconColor, strength)
+                repository.insertPassword(title, username, password, website, notes, iconColor, strength, categoryId)
             } else {
-                repository.updatePassword(id, title, username, password, website, notes, iconColor = iconColor, strength = strength)
+                repository.updatePassword(id, title, username, password, website, notes, iconColor = iconColor, strength = strength, categoryId = categoryId)
             }
         }
     }

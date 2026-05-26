@@ -48,6 +48,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +66,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.passvault.data.model.Category
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.ui.theme.BrandColors
 import com.example.passvault.ui.theme.CardBackground
@@ -96,6 +98,7 @@ fun PasswordDetailScreen(
     var notes by remember { mutableStateOf("") }
     var isFavorite by remember { mutableStateOf(false) }
     var iconColor by remember { mutableStateOf(0) }
+    var categoryId by remember { mutableStateOf(0L) }
     var createdAt by remember { mutableStateOf(0L) }
     var updatedAt by remember { mutableStateOf(0L) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -120,6 +123,7 @@ fun PasswordDetailScreen(
                     notes = entry.notes
                     isFavorite = entry.isFavorite
                     iconColor = entry.iconColor
+                    categoryId = entry.categoryId
                     createdAt = entry.createdAt
                     updatedAt = entry.updatedAt
                 }
@@ -176,10 +180,10 @@ fun PasswordDetailScreen(
                             .background(if (title.isNotEmpty() && password.isNotEmpty()) PrimaryPurple else Color.White.copy(alpha = 0.07f))
                             .clickable(enabled = title.isNotEmpty() && password.isNotEmpty()) {
                                 if (isNewPassword) {
-                                    viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0)
+                                    viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0, categoryId)
                                     onPasswordSaved()
                                 } else {
-                                    viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0)
+                                    viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0, categoryId)
                                     isEditing = false
                                 }
                             },
@@ -272,12 +276,15 @@ fun PasswordDetailScreen(
 
             // Fields
             if (isEditing) {
+                val categories by viewModel.categories.collectAsState()
                 EditableFields(
                     title = title, onTitleChange = { title = it },
                     username = username, onUsernameChange = { username = it },
                     password = password, onPasswordChange = { password = it },
                     website = website, onWebsiteChange = { website = it },
                     notes = notes, onNotesChange = { notes = it },
+                    categoryId = categoryId, onCategoryChange = { categoryId = it },
+                    categories = categories,
                     passwordVisible = passwordVisible,
                     onPasswordVisibilityChange = { passwordVisible = !passwordVisible },
                     onGenerateClick = { showGeneratorDialog = true },
@@ -288,10 +295,10 @@ fun PasswordDetailScreen(
                 Button(
                     onClick = {
                         if (isNewPassword) {
-                            viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0)
+                            viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0, categoryId)
                             onPasswordSaved()
                         } else {
-                            viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0)
+                            viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0, categoryId)
                             isEditing = false
                         }
                     },
@@ -555,6 +562,8 @@ fun EditableFields(
     password: String, onPasswordChange: (String) -> Unit,
     website: String, onWebsiteChange: (String) -> Unit,
     notes: String, onNotesChange: (String) -> Unit,
+    categoryId: Long, onCategoryChange: (Long) -> Unit,
+    categories: List<com.example.passvault.data.model.Category>,
     passwordVisible: Boolean,
     onPasswordVisibilityChange: () -> Unit,
     onGenerateClick: () -> Unit,
@@ -565,6 +574,12 @@ fun EditableFields(
             DetailTextField(value = title, onValueChange = onTitleChange, label = "名称", placeholder = "例如: Google")
         }
         DetailTextField(value = username, onValueChange = onUsernameChange, label = "用户名", placeholder = "例如: user@gmail.com")
+
+        CategorySelectionField(
+            selectedCategoryId = categoryId,
+            categories = categories,
+            onCategorySelected = onCategoryChange
+        )
 
         // Password field with generate
         Column(
@@ -760,4 +775,78 @@ fun PasswordGeneratorDialog(
             }
         }
     )
+}
+
+@Composable
+fun CategorySelectionField(
+    selectedCategoryId: Long,
+    categories: List<com.example.passvault.data.model.Category>,
+    onCategorySelected: (Long) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedCategory = categories.find { it.id == selectedCategoryId }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(CardBackground)
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .clickable { expanded = true }
+            .padding(16.dp)
+    ) {
+        Text("分类", fontSize = 12.sp, color = TextSecondary)
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (selectedCategory != null) {
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .clip(CircleShape)
+                        .background(BrandColors[selectedCategory.color % BrandColors.size])
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = selectedCategory.name,
+                    fontSize = 14.sp,
+                    color = Color.White,
+                    modifier = Modifier.weight(1f)
+                )
+            } else {
+                Text(
+                    text = "选择分类",
+                    fontSize = 14.sp,
+                    color = TextTertiary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(BrandColors[category.color % BrandColors.size])
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(category.name, color = Color.White, fontSize = 14.sp)
+                        }
+                    },
+                    onClick = {
+                        onCategorySelected(category.id)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }

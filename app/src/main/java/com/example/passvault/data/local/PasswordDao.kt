@@ -41,4 +41,10 @@ interface PasswordDao {
 
     @Query("SELECT * FROM password_entries")
     suspend fun getAllPasswordsForAnalysis(): List<PasswordEntry>
+
+    @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId ORDER BY updatedAt DESC")
+    fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntry>>
+
+    @Query("UPDATE password_entries SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
+    suspend fun updatePasswordsCategory(oldCategoryId: Long, newCategoryId: Long)
 }

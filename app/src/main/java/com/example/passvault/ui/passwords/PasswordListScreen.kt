@@ -55,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.passvault.data.model.Category
 import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.ui.theme.BrandColors
 import com.example.passvault.ui.theme.CardBackground
@@ -76,6 +77,7 @@ fun PasswordListScreen(
     val passwords by viewModel.passwords.collectAsState()
     val filterMode by viewModel.filterMode.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val categories by viewModel.categories.collectAsState()
 
     var isSearchActive by remember { mutableStateOf(false) }
 
@@ -186,6 +188,13 @@ fun PasswordListScreen(
                         icon = Icons.Default.History,
                         selected = filterMode == PasswordFilter.RECENT,
                         onClick = { viewModel.setFilter(PasswordFilter.RECENT) }
+                    )
+                }
+                items(categories) { category ->
+                    CategoryFilterChip(
+                        category = category,
+                        selected = filterMode is PasswordFilter.CATEGORY && (filterMode as PasswordFilter.CATEGORY).categoryId == category.id,
+                        onClick = { viewModel.setFilter(PasswordFilter.CATEGORY(category.id)) }
                     )
                 }
             }
@@ -377,5 +386,35 @@ fun PasswordListItem(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun CategoryFilterChip(
+    category: com.example.passvault.data.model.Category,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (selected) BrandColors[category.color % BrandColors.size] else Color.White.copy(alpha = 0.07f))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(if (selected) Color.White else BrandColors[category.color % BrandColors.size])
+        )
+        Text(
+            text = category.name,
+            fontSize = 12.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (selected) Color.White else TextSecondary
+        )
     }
 }

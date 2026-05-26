@@ -2,6 +2,7 @@ package com.example.passvault.di
 
 import android.content.Context
 import androidx.room.Room
+import com.example.passvault.data.local.CategoryDao
 import com.example.passvault.data.local.PasswordDao
 import com.example.passvault.data.local.PasswordDatabase
 import dagger.Module
@@ -33,5 +34,11 @@ object DatabaseModule {
     @Singleton
     fun providePasswordDao(database: PasswordDatabase): PasswordDao {
         return database.passwordDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCategoryDao(database: PasswordDatabase): CategoryDao {
+        return database.categoryDao()
     }
 }

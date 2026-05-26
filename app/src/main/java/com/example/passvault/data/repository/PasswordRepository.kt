@@ -38,7 +38,8 @@ class PasswordRepository @Inject constructor(
         website: String = "",
         notes: String = "",
         iconColor: Int = 0,
-        strength: Int = 0
+        strength: Int = 0,
+        categoryId: Long = 0
     ): Long {
         val encryptedData = cryptoManager.encrypt(password)
         val entry = PasswordEntry(
@@ -49,7 +50,8 @@ class PasswordRepository @Inject constructor(
             website = website,
             notes = notes,
             iconColor = iconColor,
-            strength = strength
+            strength = strength,
+            categoryId = categoryId
         )
         return passwordDao.insertPassword(entry)
     }
@@ -63,7 +65,8 @@ class PasswordRepository @Inject constructor(
         notes: String = "",
         isFavorite: Boolean = false,
         iconColor: Int = 0,
-        strength: Int = 0
+        strength: Int = 0,
+        categoryId: Long = 0
     ) {
         val encryptedData = cryptoManager.encrypt(password)
         val entry = PasswordEntry(
@@ -77,6 +80,7 @@ class PasswordRepository @Inject constructor(
             isFavorite = isFavorite,
             iconColor = iconColor,
             strength = strength,
+            categoryId = categoryId,
             updatedAt = System.currentTimeMillis()
         )
         passwordDao.updatePassword(entry)
@@ -95,6 +99,12 @@ class PasswordRepository @Inject constructor(
         entry?.let { passwordDao.deletePassword(it) }
     }
 
+    fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntryDisplay>> {
+        return passwordDao.getPasswordsByCategory(categoryId).map { entries ->
+            entries.map { it.toDisplay() }
+        }
+    }
+
     private fun PasswordEntry.toDisplay(): PasswordEntryDisplay {
         val decryptedPassword = cryptoManager.decrypt(
             EncryptedData(encryptedPassword, passwordIv)
@@ -110,6 +120,7 @@ class PasswordRepository @Inject constructor(
             lastUsedAt = lastUsedAt,
             iconColor = iconColor,
             strength = strength,
+            categoryId = categoryId,
             createdAt = createdAt,
             updatedAt = updatedAt
         )
@@ -182,6 +193,7 @@ data class PasswordEntryDisplay(
     val lastUsedAt: Long,
     val iconColor: Int,
     val strength: Int,
+    val categoryId: Long,
     val createdAt: Long,
     val updatedAt: Long
 )
