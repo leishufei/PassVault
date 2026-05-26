@@ -71,6 +71,9 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("net.zetetic:sqlcipher-android:4.6.1")
 
+    // CSV
+    implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
+
     // Hilt
     implementation("com.google.dagger:hilt-android:2.54")
     ksp("com.google.dagger:hilt-compiler:2.54")

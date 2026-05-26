@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -46,6 +47,19 @@ class PasswordViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+
+    val categoryCounts: StateFlow<Map<Long, Int>> = _rawPasswords.map { passwords ->
+        val counts = mutableMapOf<Long, Int>()
+        counts[0L] = passwords.size // 0L represents ALL
+        passwords.forEach { pw ->
+            counts[pw.categoryId] = (counts[pw.categoryId] ?: 0) + 1
+        }
+        counts
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
+    )
 
     val passwords: StateFlow<List<PasswordEntryDisplay>> = combine(
         _rawPasswords,

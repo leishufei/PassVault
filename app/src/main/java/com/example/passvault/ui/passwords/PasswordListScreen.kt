@@ -78,6 +78,7 @@ fun PasswordListScreen(
     val filterMode by viewModel.filterMode.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val categoryCounts by viewModel.categoryCounts.collectAsState()
 
     var isSearchActive by remember { mutableStateOf(false) }
     var isCategoryDropdownExpanded by remember { mutableStateOf(false) }
@@ -215,7 +216,7 @@ fun PasswordListScreen(
                                         tint = if (filterMode == PasswordFilter.ALL) PrimaryPurple else TextSecondary
                                     )
                                     Text(
-                                        "全部",
+                                        "全部 (${categoryCounts[0L] ?: 0})",
                                         color = if (filterMode == PasswordFilter.ALL) PrimaryPurple else Color.White,
                                         fontSize = 14.sp,
                                         fontWeight = if (filterMode == PasswordFilter.ALL) FontWeight.SemiBold else FontWeight.Normal
@@ -243,7 +244,7 @@ fun PasswordListScreen(
                                                 .background(BrandColors[category.color % BrandColors.size])
                                         )
                                         Text(
-                                            category.name,
+                                            "${category.name} (${categoryCounts[category.id] ?: 0})",
                                             color = if (isSelected) PrimaryPurple else Color.White,
                                             fontSize = 14.sp,
                                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal

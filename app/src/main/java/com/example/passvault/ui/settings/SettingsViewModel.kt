@@ -4,10 +4,13 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.passvault.data.repository.CategoryRepository
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.data.repository.PasswordStatistics
 import com.example.passvault.data.security.MasterPasswordManager
 import com.example.passvault.domain.auth.AuthManager
+import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import com.example.passvault.data.repository.CategoryRepository
 import javax.inject.Inject
 
 @HiltViewModel
@@ -94,69 +96,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun escapeCsv(value: String): String {
-        if (value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
-            return "\"" + value.replace("\"", "\"\"") + "\""
-        }
-        return value
-    }
-
-    private fun parseCsv(csvText: String): List<List<String>> {
-        val records = mutableListOf<List<String>>()
-        val currentRecord = mutableListOf<String>()
-        val currentField = StringBuilder()
-        var inQuotes = false
-        var i = 0
-        val len = csvText.length
-
-        while (i < len) {
-            val c = csvText[i]
-            if (inQuotes) {
-                if (c == '"') {
-                    if (i + 1 < len && csvText[i + 1] == '"') {
-                        currentField.append('"')
-                        i += 2
-                        continue
-                    } else {
-                        inQuotes = false
-                    }
-                } else {
-                    currentField.append(c)
-                }
-            } else {
-                when (c) {
-                    '"' -> {
-                        inQuotes = true
-                    }
-                    ',' -> {
-                        currentRecord.add(currentField.toString())
-                        currentField.setLength(0)
-                    }
-                    '\n', '\r' -> {
-                        if (c == '\r' && i + 1 < len && csvText[i + 1] == '\n') {
-                            i++
-                        }
-                        currentRecord.add(currentField.toString())
-                        currentField.setLength(0)
-                        if (currentRecord.isNotEmpty() && currentRecord.any { it.isNotEmpty() }) {
-                            records.add(currentRecord.toList())
-                        }
-                        currentRecord.clear()
-                    }
-                    else -> {
-                        currentField.append(c)
-                    }
-                }
-            }
-            i++
-        }
-        if (currentField.isNotEmpty() || currentRecord.isNotEmpty()) {
-            currentRecord.add(currentField.toString())
-            records.add(currentRecord.toList())
-        }
-        return records
-    }
-
     fun exportCsv(uri: Uri): Result<Unit> {
         return try {
             viewModelScope.launch {
@@ -164,22 +103,18 @@ class SettingsViewModel @Inject constructor(
                 val categories = categoryRepository.getAllCategories().first()
                 val categoryMap = categories.associate { it.id to it.name }
 
-                val sb = StringBuilder()
-                sb.append("分类,名称,用户名,明文密码\n")
-
-                passwords.forEach { password ->
-                    val categoryName = categoryMap[password.categoryId] ?: "未分类"
-                    val line = listOf(
-                        categoryName,
-                        password.title,
-                        password.username,
-                        password.password
-                    ).joinToString(",") { escapeCsv(it) }
-                    sb.append(line).append("\n")
+                val rows = buildList {
+                    add(listOf("分类", "名称", "用户名", "密码"))
+                    passwords.forEach { password ->
+                        val categoryName = categoryMap[password.categoryId] ?: "未分类"
+                        add(listOf(categoryName, password.title, password.username, password.password))
+                    }
                 }
 
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(sb.toString().toByteArray(Charsets.UTF_8))
+                    csvWriter().open(outputStream) {
+                        writeRows(rows)
+                    }
                 }
             }
             Result.success(Unit)
@@ -192,15 +127,11 @@ class SettingsViewModel @Inject constructor(
         return try {
             viewModelScope.launch {
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val csvText = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
-                    val records = parseCsv(csvText)
+                    val records = csvReader().readAll(inputStream)
                     if (records.isEmpty()) return@launch
 
-                    val startIdx = if (records[0].size >= 4 && (records[0][0].contains("分类") || records[0][1].contains("名称"))) {
-                        1
-                    } else {
-                        0
-                    }
+                    val startIdx = if (records[0].size >= 4 &&
+                        (records[0][0].contains("分类") || records[0][1].contains("名称"))) 1 else 0
 
                     val currentCategories = categoryRepository.getAllCategories().first().toMutableList()
 
