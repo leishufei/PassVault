@@ -76,7 +76,7 @@ fun PassVaultAppContent() {
 
     NavHost(
         navController = navController,
-        startDestination = if (authState.isSetupRequired) "setup" else "login"
+        startDestination = "main" // 临时用于测试：if (authState.isSetupRequired) "setup" else "login"
     ) {
         composable("setup") {
             LaunchedEffect(authState.isAuthenticated) {
