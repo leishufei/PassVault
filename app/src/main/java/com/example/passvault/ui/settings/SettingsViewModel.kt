@@ -134,6 +134,7 @@ class SettingsViewModel @Inject constructor(
                         (records[0][0].contains("分类") || records[0][1].contains("名称"))) 1 else 0
 
                     val currentCategories = categoryRepository.getAllCategories().first().toMutableList()
+                    val passwordsToInsert = mutableListOf<com.example.passvault.data.repository.PasswordImportData>()
 
                     for (idx in startIdx until records.size) {
                         val record = records[idx]
@@ -143,7 +144,7 @@ class SettingsViewModel @Inject constructor(
                         val username = record[2].trim()
                         val password = record[3]
 
-                        if (title.isEmpty() || password.isEmpty()) continue
+                        if (title.isEmpty()) continue
 
                         var categoryId = 0L
                         if (categoryName.isNotEmpty() && categoryName != "未分类") {
@@ -164,12 +165,18 @@ class SettingsViewModel @Inject constructor(
                             }
                         }
 
-                        passwordRepository.insertPassword(
-                            title = title,
-                            username = username,
-                            password = password,
-                            categoryId = categoryId
+                        passwordsToInsert.add(
+                            com.example.passvault.data.repository.PasswordImportData(
+                                title = title,
+                                username = username,
+                                password = password,
+                                categoryId = categoryId
+                            )
                         )
+                    }
+                    
+                    if (passwordsToInsert.isNotEmpty()) {
+                        passwordRepository.insertPasswords(passwordsToInsert)
                     }
                 }
             }

@@ -56,6 +56,24 @@ class PasswordRepository @Inject constructor(
         return passwordDao.insertPassword(entry)
     }
 
+    suspend fun insertPasswords(passwords: List<PasswordImportData>) {
+        val entries = passwords.map { data ->
+            val encryptedData = cryptoManager.encrypt(data.password)
+            PasswordEntry(
+                title = data.title,
+                username = data.username,
+                encryptedPassword = encryptedData.ciphertext,
+                passwordIv = encryptedData.iv,
+                website = data.website,
+                notes = data.notes,
+                iconColor = data.iconColor,
+                strength = data.strength,
+                categoryId = data.categoryId
+            )
+        }
+        passwordDao.insertPasswords(entries)
+    }
+
     suspend fun updatePassword(
         id: Long,
         title: String,
@@ -204,4 +222,15 @@ data class PasswordStatistics(
     val weakCount: Int,
     val duplicateCount: Int,
     val averageStrength: Int
+)
+
+data class PasswordImportData(
+    val title: String,
+    val username: String,
+    val password: String,
+    val website: String = "",
+    val notes: String = "",
+    val iconColor: Int = 0,
+    val strength: Int = 0,
+    val categoryId: Long = 0
 )
