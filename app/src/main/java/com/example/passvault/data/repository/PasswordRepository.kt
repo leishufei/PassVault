@@ -21,6 +21,17 @@ class PasswordRepository @Inject constructor(
         }
     }
 
+    fun getAllPasswordsForList(): Flow<List<PasswordEntryListItem>> {
+        return passwordDao.getAllPasswords().map { entries ->
+            entries.map { it.toListItem() }
+        }
+    }
+
+    suspend fun decryptPassword(id: Long): String? {
+        val entry = passwordDao.getPasswordById(id) ?: return null
+        return cryptoManager.decrypt(EncryptedData(entry.encryptedPassword, entry.passwordIv))
+    }
+
     suspend fun getPasswordById(id: Long): PasswordEntryDisplay? {
         return passwordDao.getPasswordById(id)?.toDisplay()
     }
@@ -144,6 +155,22 @@ class PasswordRepository @Inject constructor(
         )
     }
 
+    private fun PasswordEntry.toListItem(): PasswordEntryListItem {
+        return PasswordEntryListItem(
+            id = id,
+            title = title,
+            username = username,
+            website = website,
+            isFavorite = isFavorite,
+            lastUsedAt = lastUsedAt,
+            iconColor = iconColor,
+            strength = strength,
+            categoryId = categoryId,
+            createdAt = createdAt,
+            updatedAt = updatedAt
+        )
+    }
+
     suspend fun getPasswordStatistics(): PasswordStatistics {
         val entries = passwordDao.getAllPasswordsForAnalysis()
         if (entries.isEmpty()) {
@@ -207,6 +234,20 @@ data class PasswordEntryDisplay(
     val password: String,
     val website: String,
     val notes: String,
+    val isFavorite: Boolean,
+    val lastUsedAt: Long,
+    val iconColor: Int,
+    val strength: Int,
+    val categoryId: Long,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+data class PasswordEntryListItem(
+    val id: Long,
+    val title: String,
+    val username: String,
+    val website: String,
     val isFavorite: Boolean,
     val lastUsedAt: Long,
     val iconColor: Int,

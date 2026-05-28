@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.passvault.data.model.Category
 import com.example.passvault.data.repository.CategoryRepository
 import com.example.passvault.data.repository.PasswordEntryDisplay
+import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.domain.generator.PasswordGenerator
@@ -39,7 +40,7 @@ class PasswordViewModel @Inject constructor(
     private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.ALL)
     val filterMode: StateFlow<PasswordFilter> = _filterMode.asStateFlow()
 
-    private val _rawPasswords = MutableStateFlow<List<PasswordEntryDisplay>>(emptyList())
+    private val _rawPasswords = MutableStateFlow<List<PasswordEntryListItem>>(emptyList())
 
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
         .stateIn(
@@ -61,7 +62,7 @@ class PasswordViewModel @Inject constructor(
         initialValue = emptyMap()
     )
 
-    val passwords: StateFlow<List<PasswordEntryDisplay>> = combine(
+    val passwords: StateFlow<List<PasswordEntryListItem>> = combine(
         _rawPasswords,
         _searchQuery,
         _filterMode
@@ -94,10 +95,23 @@ class PasswordViewModel @Inject constructor(
 
     private fun loadPasswords() {
         viewModelScope.launch {
-            repository.getAllPasswords().collect { passwords ->
+            repository.getAllPasswordsForList().collect { passwords ->
                 _rawPasswords.value = passwords
             }
         }
+    }
+
+    fun decryptPassword(id: Long, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val password = repository.decryptPassword(id)
+            if (password != null) {
+                onResult(password)
+            }
+        }
+    }
+
+    suspend fun getPasswordDetail(id: Long): PasswordEntryDisplay? {
+        return repository.getPasswordById(id)
     }
 
     fun searchPasswords(query: String) {
