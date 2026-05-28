@@ -114,19 +114,17 @@ fun PasswordDetailScreen(
 
     LaunchedEffect(passwordId) {
         passwordId?.let { id ->
-            viewModel.passwords.collect { passwords ->
-                passwords.find { it.id == id }?.let { entry ->
-                    title = entry.title
-                    username = entry.username
-                    password = entry.password
-                    website = entry.website
-                    notes = entry.notes
-                    isFavorite = entry.isFavorite
-                    iconColor = entry.iconColor
-                    categoryId = entry.categoryId
-                    createdAt = entry.createdAt
-                    updatedAt = entry.updatedAt
-                }
+            viewModel.getPasswordDetail(id)?.let { entry ->
+                title = entry.title
+                username = entry.username
+                password = entry.password
+                website = entry.website
+                notes = entry.notes
+                isFavorite = entry.isFavorite
+                iconColor = entry.iconColor
+                categoryId = entry.categoryId
+                createdAt = entry.createdAt
+                updatedAt = entry.updatedAt
             }
         }
     }

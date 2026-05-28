@@ -56,7 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.passvault.data.model.Category
-import com.example.passvault.data.repository.PasswordEntryDisplay
+import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.ui.theme.BrandColors
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
@@ -304,6 +304,11 @@ fun PasswordListScreen(
                             onFavoriteClick = {
                                 viewModel.toggleFavorite(password.id, !password.isFavorite)
                             },
+                            onCopyPassword = { onCopied ->
+                                viewModel.decryptPassword(password.id) { decrypted ->
+                                    onCopied(decrypted)
+                                }
+                            },
                             onDelete = {
                                 viewModel.deletePassword(password.id)
                             }
@@ -362,9 +367,10 @@ fun PillFilterChip(
 
 @Composable
 fun PasswordListItem(
-    password: PasswordEntryDisplay,
+    password: PasswordEntryListItem,
     onClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onCopyPassword: (onCopied: (String) -> Unit) -> Unit,
     onDelete: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -442,7 +448,9 @@ fun PasswordListItem(
                 DropdownMenuItem(
                     text = { Text("复制密码", color = Color.White, fontSize = 14.sp) },
                     onClick = {
-                        clipboardManager.setText(AnnotatedString(password.password))
+                        onCopyPassword { decryptedPassword ->
+                            clipboardManager.setText(AnnotatedString(decryptedPassword))
+                        }
                         showMenu = false
                     }
                 )
