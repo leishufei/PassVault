@@ -13,11 +13,13 @@ import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -37,7 +39,6 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadSettings()
-        loadPasswordStatistics()
     }
 
     private fun loadSettings() {
@@ -51,10 +52,13 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun loadPasswordStatistics() {
+    fun loadPasswordStatisticsIfNeeded() {
+        if (_uiState.value.passwordStats != null) return
         viewModelScope.launch {
             try {
-                val stats = passwordRepository.getPasswordStatistics()
+                val stats = withContext(Dispatchers.IO) {
+                    passwordRepository.getPasswordStatistics()
+                }
                 _uiState.value = _uiState.value.copy(passwordStats = stats)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(passwordStats = null)

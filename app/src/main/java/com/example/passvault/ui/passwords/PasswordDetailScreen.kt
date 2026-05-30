@@ -163,6 +163,24 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
+                            .background(if (isFavorite) WarningYellow.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.07f))
+                            .clickable {
+                                isFavorite = !isFavorite
+                                passwordId?.let { viewModel.toggleFavorite(it, isFavorite) }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                            contentDescription = "Favorite",
+                            tint = if (isFavorite) WarningYellow else Color(0xFFB0B0CC),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
                             .background(Color.White.copy(alpha = 0.07f))
                             .clickable { isEditing = true },
                         contentAlignment = Alignment.Center
@@ -237,21 +255,7 @@ fun PasswordDetailScreen(
 
             if (!isEditing && title.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
-                        contentDescription = "Favorite",
-                        tint = if (isFavorite) WarningYellow else TextTertiary,
-                        modifier = Modifier
-                            .size(20.dp)
-                            .clickable {
-                                isFavorite = !isFavorite
-                                passwordId?.let { viewModel.toggleFavorite(it, isFavorite) }
-                            }
-                    )
-                }
+                Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -588,16 +592,21 @@ fun EditableFields(
     isNewPassword: Boolean
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (isNewPassword) {
-            DetailTextField(value = title, onValueChange = onTitleChange, label = "名称", placeholder = "例如: Google")
-        }
-        DetailTextField(value = username, onValueChange = onUsernameChange, label = "用户名", placeholder = "例如: user@gmail.com")
+        DetailTextField(
+            value = title,
+            onValueChange = onTitleChange,
+            label = "名称",
+            placeholder = "例如: Google",
+            readOnly = !isNewPassword
+        )
 
         CategorySelectionField(
             selectedCategoryId = categoryId,
             categories = categories,
             onCategorySelected = onCategoryChange
         )
+
+        DetailTextField(value = username, onValueChange = onUsernameChange, label = "用户名", placeholder = "例如: user@gmail.com")
 
         // Password field with generate
         Column(

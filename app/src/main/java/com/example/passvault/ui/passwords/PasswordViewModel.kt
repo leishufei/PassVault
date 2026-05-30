@@ -1,5 +1,6 @@
 package com.example.passvault.ui.passwords
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.passvault.data.model.Category
@@ -10,18 +11,19 @@ import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.domain.generator.PasswordGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 sealed class PasswordFilter {
-    object ALL : PasswordFilter()
     object FAVORITES : PasswordFilter()
     object RECENT : PasswordFilter()
     data class CATEGORY(val categoryId: Long) : PasswordFilter()
@@ -29,15 +31,18 @@ sealed class PasswordFilter {
 
 @HiltViewModel
 class PasswordViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: PasswordRepository,
     private val categoryRepository: CategoryRepository,
     private val passwordGenerator: PasswordGenerator
 ) : ViewModel() {
 
+    private val prefs = context.getSharedPreferences("passvault_filter", Context.MODE_PRIVATE)
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.ALL)
+    private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.CATEGORY(0L))
     val filterMode: StateFlow<PasswordFilter> = _filterMode.asStateFlow()
 
     private val _rawPasswords = MutableStateFlow<List<PasswordEntryListItem>>(emptyList())
@@ -78,7 +83,6 @@ class PasswordViewModel @Inject constructor(
         }
 
         when (filter) {
-            PasswordFilter.ALL -> filtered
             PasswordFilter.FAVORITES -> filtered.filter { it.isFavorite }
             PasswordFilter.RECENT -> filtered.sortedByDescending { it.lastUsedAt }
             is PasswordFilter.CATEGORY -> filtered.filter { it.categoryId == filter.categoryId }
@@ -91,6 +95,17 @@ class PasswordViewModel @Inject constructor(
 
     init {
         loadPasswords()
+        initCategoryFilter()
+    }
+
+    private fun initCategoryFilter() {
+        viewModelScope.launch {
+            val cats = categoryRepository.getAllCategories().first()
+            if (cats.isEmpty()) return@launch
+            val savedId = prefs.getLong(KEY_SELECTED_CATEGORY, -1L)
+            val targetId = if (savedId >= 0 && cats.any { it.id == savedId }) savedId else cats.first().id
+            _filterMode.value = PasswordFilter.CATEGORY(targetId)
+        }
     }
 
     private fun loadPasswords() {
@@ -120,6 +135,9 @@ class PasswordViewModel @Inject constructor(
 
     fun setFilter(filter: PasswordFilter) {
         _filterMode.value = filter
+        if (filter is PasswordFilter.CATEGORY) {
+            prefs.edit().putLong(KEY_SELECTED_CATEGORY, filter.categoryId).apply()
+        }
     }
 
     fun toggleFavorite(id: Long, isFavorite: Boolean) {
@@ -162,5 +180,9 @@ class PasswordViewModel @Inject constructor(
 
     fun generatePassword(config: PasswordConfig): String {
         return passwordGenerator.generatePassword(config)
+    }
+
+    companion object {
+        private const val KEY_SELECTED_CATEGORY = "selected_category_id"
     }
 }

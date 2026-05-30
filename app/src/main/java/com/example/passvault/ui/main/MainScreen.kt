@@ -108,7 +108,8 @@ fun BottomNavBar(
     NavigationBar(
         containerColor = Color(0xFF0E0C20),
         tonalElevation = 0.dp,
-        modifier = Modifier.height(64.dp)
+        modifier = Modifier
+            .height(72.dp)
     ) {
         items.forEach { item ->
             val active = currentRoute == item.route

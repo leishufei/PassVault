@@ -157,105 +157,80 @@ fun PasswordListScreen(
                     .padding(horizontal = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Category dropdown (replaces "全部" button)
-                Box {
-                    val currentCategoryLabel = when (filterMode) {
-                        is PasswordFilter.CATEGORY -> {
-                            val cat = categories.find { it.id == (filterMode as PasswordFilter.CATEGORY).categoryId }
-                            cat?.name ?: "全部"
-                        }
-                        PasswordFilter.ALL -> "全部"
-                        else -> "全部"
-                    }
-                    val isActive = filterMode == PasswordFilter.ALL || filterMode is PasswordFilter.CATEGORY
-
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(50))
-                            .background(if (isActive) PrimaryPurple else Color.White.copy(alpha = 0.07f))
-                            .clickable { isCategoryDropdownExpanded = true }
-                            .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(13.dp),
-                            tint = if (isActive) Color.White else TextSecondary
-                        )
-                        Text(
-                            text = currentCategoryLabel,
-                            fontSize = 12.sp,
-                            fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                            color = if (isActive) Color.White else TextSecondary
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = if (isActive) Color.White else TextSecondary
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = isCategoryDropdownExpanded,
-                        onDismissRequest = { isCategoryDropdownExpanded = false },
-                        modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Lock,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = if (filterMode == PasswordFilter.ALL) PrimaryPurple else TextSecondary
-                                    )
-                                    Text(
-                                        "全部 (${categoryCounts[0L] ?: 0})",
-                                        color = if (filterMode == PasswordFilter.ALL) PrimaryPurple else Color.White,
-                                        fontSize = 14.sp,
-                                        fontWeight = if (filterMode == PasswordFilter.ALL) FontWeight.SemiBold else FontWeight.Normal
-                                    )
-                                }
-                            },
-                            onClick = {
-                                viewModel.setFilter(PasswordFilter.ALL)
-                                isCategoryDropdownExpanded = false
+                // Category dropdown
+                if (categories.isNotEmpty()) {
+                    Box {
+                        val currentCategoryLabel = when (filterMode) {
+                            is PasswordFilter.CATEGORY -> {
+                                val cat = categories.find { it.id == (filterMode as PasswordFilter.CATEGORY).categoryId }
+                                cat?.name ?: categories.first().name
                             }
-                        )
-                        categories.forEach { category ->
-                            val isSelected = filterMode is PasswordFilter.CATEGORY &&
-                                    (filterMode as PasswordFilter.CATEGORY).categoryId == category.id
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(10.dp)
-                                                .clip(CircleShape)
-                                                .background(BrandColors[category.color % BrandColors.size])
-                                        )
-                                        Text(
-                                            "${category.name} (${categoryCounts[category.id] ?: 0})",
-                                            color = if (isSelected) PrimaryPurple else Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-                                        )
-                                    }
-                                },
-                                onClick = {
-                                    viewModel.setFilter(PasswordFilter.CATEGORY(category.id))
-                                    isCategoryDropdownExpanded = false
-                                }
+                            else -> categories.first().name
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(50))
+                                .background(if (filterMode is PasswordFilter.CATEGORY) PrimaryPurple else Color.White.copy(alpha = 0.07f))
+                                .clickable { isCategoryDropdownExpanded = true }
+                                .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                modifier = Modifier.size(13.dp),
+                                tint = if (filterMode is PasswordFilter.CATEGORY) Color.White else TextSecondary
                             )
+                            Text(
+                                text = currentCategoryLabel,
+                                fontSize = 12.sp,
+                                fontWeight = if (filterMode is PasswordFilter.CATEGORY) FontWeight.SemiBold else FontWeight.Normal,
+                                color = if (filterMode is PasswordFilter.CATEGORY) Color.White else TextSecondary
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = if (filterMode is PasswordFilter.CATEGORY) Color.White else TextSecondary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = isCategoryDropdownExpanded,
+                            onDismissRequest = { isCategoryDropdownExpanded = false },
+                            modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
+                        ) {
+                            categories.forEach { category ->
+                                val isSelected = filterMode is PasswordFilter.CATEGORY &&
+                                        (filterMode as PasswordFilter.CATEGORY).categoryId == category.id
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(10.dp)
+                                                    .clip(CircleShape)
+                                                    .background(BrandColors[category.color % BrandColors.size])
+                                            )
+                                            Text(
+                                                "${category.name} (${categoryCounts[category.id] ?: 0})",
+                                                color = if (isSelected) PrimaryPurple else Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        viewModel.setFilter(PasswordFilter.CATEGORY(category.id))
+                                        isCategoryDropdownExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -325,11 +300,11 @@ fun PasswordListScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 24.dp)
-                .size(56.dp),
+                .size(40.dp),
             shape = CircleShape,
             containerColor = PrimaryPurple
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(26.dp))
+            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(20.dp))
         }
     }
 }

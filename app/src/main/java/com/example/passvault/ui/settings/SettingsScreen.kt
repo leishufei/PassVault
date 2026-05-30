@@ -141,7 +141,10 @@ fun SettingsScreen(
                     iconTint = SuccessGreen,
                     title = "保险库",
                     subtitle = "查看安全评分",
-                    onClick = { showSafeDialog = true }
+                    onClick = {
+                        viewModel.loadPasswordStatisticsIfNeeded()
+                        showSafeDialog = true
+                    }
                 )
                 SettingDivider()
                 SettingItem(
