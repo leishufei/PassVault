@@ -18,6 +18,21 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Read Web Client ID from local.properties
+        val localProperties = java.util.Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localProperties.load(localPropertiesFile.inputStream())
+        }
+        val webClientId = localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$webClientId\"")
+
+        val devSkipAuth = localProperties.getProperty("DEV_SKIP_AUTH", "false")
+        buildConfigField("boolean", "DEV_SKIP_AUTH", devSkipAuth)
+
+        val devMasterPassword = localProperties.getProperty("DEV_MASTER_PASSWORD", "")
+        buildConfigField("String", "DEV_MASTER_PASSWORD", "\"$devMasterPassword\"")
     }
 
     buildTypes {
@@ -41,6 +56,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

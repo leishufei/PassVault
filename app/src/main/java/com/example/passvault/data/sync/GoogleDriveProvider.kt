@@ -3,6 +3,7 @@ package com.example.passvault.data.sync
 import android.content.Context
 import android.content.Intent
 import com.example.passvault.domain.sync.CloudStorageProvider
+import com.example.passvault.BuildConfig
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -26,15 +27,15 @@ class GoogleDriveProvider @Inject constructor(
 ) : CloudStorageProvider {
 
     companion object {
-        private const val WEB_CLIENT_ID =
-            "388522288499-mj21cvcfqkco2gngf3b17tle195qg3jq.apps.googleusercontent.com"
+        private val WEB_CLIENT_ID = BuildConfig.GOOGLE_WEB_CLIENT_ID
+        private const val BACKUP_FOLDER_NAME = "PassVault"
     }
 
     override val providerName: String = "Google Drive"
 
     private val gso: GoogleSignInOptions = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestEmail()
-        .requestScopes(Scope(DriveScopes.DRIVE_APPDATA))
+        .requestScopes(Scope(DriveScopes.DRIVE_FILE))
         .requestServerAuthCode(WEB_CLIENT_ID)
         .build()
 
@@ -58,7 +59,7 @@ class GoogleDriveProvider @Inject constructor(
     override suspend fun trySilentSignIn(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val account = GoogleSignIn.getLastSignedInAccount(context)
-            if (account != null && GoogleSignIn.hasPermissions(account, Scope(DriveScopes.DRIVE_APPDATA))) {
+            if (account != null && GoogleSignIn.hasPermissions(account, Scope(DriveScopes.DRIVE_FILE))) {
                 buildDriveService(account)
                 Result.success(Unit)
             } else {
@@ -81,8 +82,11 @@ class GoogleDriveProvider @Inject constructor(
             try {
                 val drive = driveService ?: return@withContext Result.failure(Exception("Not authenticated"))
 
+                // 获取或创建 PassVault 文件夹
+                val folderId = getOrCreateFolder(drive)
+
                 // 查找是否已存在同名文件
-                val existingFileId = findFileId(drive, remoteFileName)
+                val existingFileId = findFileId(drive, remoteFileName, folderId)
 
                 if (existingFileId != null) {
                     // 更新已有文件
@@ -92,7 +96,7 @@ class GoogleDriveProvider @Inject constructor(
                     // 创建新文件
                     val fileMetadata = com.google.api.services.drive.model.File().apply {
                         name = remoteFileName
-                        parents = listOf("appDataFolder")
+                        parents = listOf(folderId)
                     }
                     val content = ByteArrayContent("application/json", fileData)
                     drive.files().create(fileMetadata, content)
@@ -109,7 +113,8 @@ class GoogleDriveProvider @Inject constructor(
         withContext(Dispatchers.IO) {
             try {
                 val drive = driveService ?: return@withContext Result.failure(Exception("Not authenticated"))
-                val fileId = findFileId(drive, remoteFileName)
+                val folderId = getOrCreateFolder(drive)
+                val fileId = findFileId(drive, remoteFileName, folderId)
                     ?: return@withContext Result.failure(Exception("Backup file not found on Drive"))
 
                 val outputStream = java.io.ByteArrayOutputStream()
@@ -120,19 +125,41 @@ class GoogleDriveProvider @Inject constructor(
             }
         }
 
-    private fun findFileId(drive: Drive, fileName: String): String? {
+    private fun findFileId(drive: Drive, fileName: String, folderId: String): String? {
         val result = drive.files().list()
-            .setSpaces("appDataFolder")
-            .setQ("name = '$fileName'")
+            .setSpaces("drive")
+            .setQ("name = '$fileName' and '$folderId' in parents and trashed = false")
             .setFields("files(id, name)")
             .setPageSize(1)
             .execute()
         return result.files?.firstOrNull()?.id
     }
 
+    private fun getOrCreateFolder(drive: Drive): String {
+        // 查找已有的 PassVault 文件夹
+        val result = drive.files().list()
+            .setSpaces("drive")
+            .setQ("name = '$BACKUP_FOLDER_NAME' and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+            .setFields("files(id, name)")
+            .setPageSize(1)
+            .execute()
+        val existingFolder = result.files?.firstOrNull()
+        if (existingFolder != null) return existingFolder.id
+
+        // 创建新的 PassVault 文件夹
+        val folderMetadata = com.google.api.services.drive.model.File().apply {
+            name = BACKUP_FOLDER_NAME
+            mimeType = "application/vnd.google-apps.folder"
+        }
+        val folder = drive.files().create(folderMetadata)
+            .setFields("id")
+            .execute()
+        return folder.id
+    }
+
     private fun buildDriveService(account: GoogleSignInAccount) {
         val credential = GoogleAccountCredential.usingOAuth2(
-            context, listOf(DriveScopes.DRIVE_APPDATA)
+            context, listOf(DriveScopes.DRIVE_FILE)
         )
         credential.selectedAccount = account.account
         driveService = Drive.Builder(
