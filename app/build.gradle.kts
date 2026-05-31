@@ -42,6 +42,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/INDEX.LIST",
+                "META-INF/DEPENDENCIES"
+            )
+        }
+    }
 }
 
 dependencies {
@@ -71,8 +80,14 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("net.zetetic:sqlcipher-android:4.6.1")
 
-    // CSV
+    // CSV & JSON
     implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+
+    // Google Drive
+    implementation("com.google.android.gms:play-services-auth:21.6.0")
+    implementation("com.google.api-client:google-api-client-android:2.9.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20260428-2.0.0")
 
     // Hilt
     implementation("com.google.dagger:hilt-android:2.54")
