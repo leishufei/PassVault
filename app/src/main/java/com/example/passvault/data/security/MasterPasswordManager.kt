@@ -33,6 +33,7 @@ class MasterPasswordManager @Inject constructor(
         val hash = hashPassword(password)
         sharedPreferences.edit()
             .putString(KEY_MASTER_PASSWORD_HASH, hash)
+            .putString(KEY_MASTER_PASSWORD_PLAINTEXT, password) // EncryptedSharedPreferences encrypts this
             .apply()
     }
 
@@ -40,6 +41,10 @@ class MasterPasswordManager @Inject constructor(
         val storedHash = sharedPreferences.getString(KEY_MASTER_PASSWORD_HASH, null)
             ?: return false
         return storedHash == hashPassword(password)
+    }
+
+    fun getDecryptedMasterPassword(): String? {
+        return sharedPreferences.getString(KEY_MASTER_PASSWORD_PLAINTEXT, null)
     }
 
     fun isBiometricEnabled(): Boolean {
@@ -71,6 +76,7 @@ class MasterPasswordManager @Inject constructor(
     companion object {
         private const val PREFS_NAME = "master_password_prefs"
         private const val KEY_MASTER_PASSWORD_HASH = "master_password_hash"
+        private const val KEY_MASTER_PASSWORD_PLAINTEXT = "master_password_plaintext"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
         private const val KEY_AUTO_LOCK_TIME = "auto_lock_time"
     }

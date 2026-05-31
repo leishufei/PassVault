@@ -13,7 +13,8 @@ import javax.inject.Singleton
 @Singleton
 class AuthManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val masterPasswordManager: MasterPasswordManager
+    private val masterPasswordManager: MasterPasswordManager,
+    private val sessionManager: SessionManager
 ) {
 
     fun isMasterPasswordSet(): Boolean {
@@ -26,6 +27,7 @@ class AuthManager @Inject constructor(
                 Result.failure(Exception("Password must be at least $MIN_PASSWORD_LENGTH characters"))
             } else {
                 masterPasswordManager.setMasterPassword(password)
+                sessionManager.onUnlock(password)
                 Result.success(Unit)
             }
         } catch (e: Exception) {
@@ -34,7 +36,11 @@ class AuthManager @Inject constructor(
     }
 
     fun verifyMasterPassword(password: String): Boolean {
-        return masterPasswordManager.verifyMasterPassword(password)
+        val isValid = masterPasswordManager.verifyMasterPassword(password)
+        if (isValid) {
+            sessionManager.onUnlock(password)
+        }
+        return isValid
     }
 
     fun isBiometricAvailable(): Boolean {
@@ -64,7 +70,13 @@ class AuthManager @Inject constructor(
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
-                    onSuccess()
+                    val pwd = masterPasswordManager.getDecryptedMasterPassword()
+                    if (pwd != null) {
+                        sessionManager.onUnlock(pwd)
+                        onSuccess()
+                    } else {
+                        onError("Failed to retrieve master password from Keystore.")
+                    }
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -104,6 +116,10 @@ class AuthManager @Inject constructor(
 
         val elapsedTime = System.currentTimeMillis() - lastActiveTime
         return elapsedTime >= timeoutMillis
+    }
+
+    fun clearSession() {
+        sessionManager.onLock()
     }
 
     companion object {

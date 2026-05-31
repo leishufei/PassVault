@@ -13,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val syncManager: com.example.passvault.domain.sync.SyncManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -50,6 +51,7 @@ class AuthViewModel @Inject constructor(
                         isAuthenticated = true,
                         error = null
                     )
+                    triggerAutoSync()
                 }
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
@@ -67,6 +69,7 @@ class AuthViewModel @Inject constructor(
                     isAuthenticated = true,
                     error = null
                 )
+                triggerAutoSync()
             } else {
                 _uiState.value = _uiState.value.copy(
                     error = "Invalid password"
@@ -80,6 +83,15 @@ class AuthViewModel @Inject constructor(
             isAuthenticated = true,
             error = null
         )
+        triggerAutoSync()
+    }
+
+    private fun triggerAutoSync() {
+        if (syncManager.currentProvider != null) {
+            viewModelScope.launch {
+                syncManager.performSync()
+            }
+        }
     }
 
     fun onBiometricError(error: String) {
@@ -101,6 +113,7 @@ class AuthViewModel @Inject constructor(
     }
 
     fun logout() {
+        authManager.clearSession()
         _uiState.value = _uiState.value.copy(
             isAuthenticated = false,
             error = null
