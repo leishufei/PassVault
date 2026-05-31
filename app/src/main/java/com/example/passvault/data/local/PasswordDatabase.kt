@@ -7,7 +7,7 @@ import com.example.passvault.data.model.PasswordEntry
 
 @Database(
     entities = [PasswordEntry::class, Category::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class PasswordDatabase : RoomDatabase() {

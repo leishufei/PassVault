@@ -19,7 +19,8 @@ data class PasswordEntry(
     val strength: Int = 0,
     val categoryId: Long = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val isDeleted: Boolean = false
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -124,8 +124,40 @@ class PasswordRepository @Inject constructor(
     }
 
     suspend fun deletePassword(id: Long) {
-        val entry = passwordDao.getPasswordById(id)
-        entry?.let { passwordDao.deletePassword(it) }
+        passwordDao.logicalDelete(id, System.currentTimeMillis())
+    }
+
+    suspend fun syncMergedPasswords(mergedItems: List<com.example.passvault.domain.sync.SyncManager.PasswordSyncItem>) {
+        val currentLocal = passwordDao.getAllPasswordsForAnalysis()
+        val localMap = currentLocal.associateBy { "${it.categoryId}::${it.title}::${it.username}" }
+
+        mergedItems.forEach { syncItem ->
+            val existing = localMap["${syncItem.categoryId}::${syncItem.title}::${syncItem.username}"]
+            val encryptedData = cryptoManager.encrypt(syncItem.password)
+            val entry = PasswordEntry(
+                id = existing?.id ?: 0L,
+                title = syncItem.title,
+                username = syncItem.username,
+                encryptedPassword = encryptedData.ciphertext,
+                passwordIv = encryptedData.iv,
+                website = syncItem.website,
+                notes = syncItem.notes,
+                isFavorite = syncItem.isFavorite,
+                iconColor = syncItem.iconColor,
+                strength = syncItem.strength,
+                categoryId = syncItem.categoryId,
+                createdAt = syncItem.createdAt,
+                updatedAt = syncItem.updatedAt,
+                isDeleted = syncItem.isDeleted
+            )
+            passwordDao.insertPassword(entry)
+        }
+    }
+
+    fun getAllPasswordsForSync(): Flow<List<PasswordEntryDisplay>> {
+        return passwordDao.getAllPasswordsForSync().map { entries ->
+            entries.map { it.toDisplay() }
+        }
     }
 
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntryDisplay>> {
@@ -151,7 +183,8 @@ class PasswordRepository @Inject constructor(
             strength = strength,
             categoryId = categoryId,
             createdAt = createdAt,
-            updatedAt = updatedAt
+            updatedAt = updatedAt,
+            isDeleted = isDeleted
         )
     }
 
@@ -240,7 +273,8 @@ data class PasswordEntryDisplay(
     val strength: Int,
     val categoryId: Long,
     val createdAt: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val isDeleted: Boolean
 )
 
 data class PasswordEntryListItem(

@@ -12,13 +12,13 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PasswordDao {
 
-    @Query("SELECT * FROM password_entries ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 ORDER BY updatedAt DESC")
     fun getAllPasswords(): Flow<List<PasswordEntry>>
 
     @Query("SELECT * FROM password_entries WHERE id = :id")
     suspend fun getPasswordById(id: Long): PasswordEntry?
 
-    @Query("SELECT * FROM password_entries WHERE title LIKE '%' || :query || '%' OR username LIKE '%' || :query || '%' OR website LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND (title LIKE '%' || :query || '%' OR username LIKE '%' || :query || '%' OR website LIKE '%' || :query || '%')")
     fun searchPasswords(query: String): Flow<List<PasswordEntry>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -39,13 +39,19 @@ interface PasswordDao {
     @Delete
     suspend fun deletePassword(entry: PasswordEntry)
 
+    @Query("UPDATE password_entries SET isDeleted = 1, updatedAt = :timestamp WHERE id = :id")
+    suspend fun logicalDelete(id: Long, timestamp: Long)
+
     @Query("DELETE FROM password_entries")
     suspend fun deleteAllPasswords()
 
     @Query("SELECT * FROM password_entries")
+    fun getAllPasswordsForSync(): Flow<List<PasswordEntry>>
+
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0")
     suspend fun getAllPasswordsForAnalysis(): List<PasswordEntry>
 
-    @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0 ORDER BY updatedAt DESC")
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntry>>
 
     @Query("UPDATE password_entries SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
