@@ -34,7 +34,8 @@ class PasswordViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: PasswordRepository,
     private val categoryRepository: CategoryRepository,
-    private val passwordGenerator: PasswordGenerator
+    private val passwordGenerator: PasswordGenerator,
+    private val syncManager: com.example.passvault.domain.sync.SyncManager
 ) : ViewModel() {
 
     private val prefs = context.getSharedPreferences("passvault_filter", Context.MODE_PRIVATE)
@@ -143,6 +144,7 @@ class PasswordViewModel @Inject constructor(
     fun toggleFavorite(id: Long, isFavorite: Boolean) {
         viewModelScope.launch {
             repository.updateFavoriteStatus(id, isFavorite)
+            triggerAutoSync()
         }
     }
 
@@ -169,12 +171,22 @@ class PasswordViewModel @Inject constructor(
             } else {
                 repository.updatePassword(id, title, username, password, website, notes, iconColor = iconColor, strength = strength, categoryId = categoryId)
             }
+            triggerAutoSync()
         }
     }
 
     fun deletePassword(id: Long) {
         viewModelScope.launch {
             repository.deletePassword(id)
+            triggerAutoSync()
+        }
+    }
+
+    private fun triggerAutoSync() {
+        if (syncManager.currentProvider != null) {
+            viewModelScope.launch {
+                syncManager.performSync()
+            }
         }
     }
 

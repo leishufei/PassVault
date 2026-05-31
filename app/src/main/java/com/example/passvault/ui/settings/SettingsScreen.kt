@@ -1,6 +1,6 @@
 package com.example.passvault.ui.settings
 
-import android.app.Activity
+import androidx.activity.result.ActivityResult
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,6 +30,10 @@ import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -89,6 +93,12 @@ fun SettingsScreen(
     var showMasterPasswordDialog by remember { mutableStateOf(false) }
 
     val autoLockOptions = listOf("立即", "1分钟", "5分钟", "10分钟", "永不")
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        viewModel.handleGoogleSignInResult(result.data)
+    }
 
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
         if (uri != null) {
@@ -223,6 +233,46 @@ fun SettingsScreen(
                     title = "分类管理",
                     subtitle = "管理密码分类",
                     onClick = onNavigateToCategoryManagement
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            SectionTitle("云同步")
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            ) {
+                SettingItem(
+                    icon = if (uiState.currentProvider != null) Icons.Default.CloudDone else Icons.Default.CloudOff,
+                    iconBg = Color(0xFF0C2040),
+                    iconTint = if (uiState.currentProvider != null) SuccessGreen else Color(0xFF60A5FA),
+                    title = if (uiState.currentProvider != null) "已绑定 ${uiState.currentProvider}" else "绑定 Google Drive",
+                    subtitle = "实现跨设备密码无缝同步",
+                    onClick = {
+                        if (uiState.currentProvider == null) {
+                            googleSignInLauncher.launch(viewModel.getGoogleSignInIntent())
+                        }
+                    }
+                )
+                SettingDivider()
+                SettingItem(
+                    icon = Icons.Default.CloudSync,
+                    iconBg = Color(0xFF2D1A45),
+                    iconTint = Color(0xFFA78BFA),
+                    title = "立即同步",
+                    subtitle = uiState.lastSyncMessage ?: "与云端进行双向合并同步",
+                    onClick = { viewModel.syncNow() },
+                    trailing = {
+                        if (uiState.isSyncing) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = PrimaryPurple, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
+                        }
+                    }
                 )
             }
 

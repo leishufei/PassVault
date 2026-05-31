@@ -1,6 +1,6 @@
 package com.example.passvault.ui.settings
 
-import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -24,11 +24,13 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext private val context: android.content.Context,
     private val authManager: AuthManager,
     private val passwordRepository: PasswordRepository,
     private val masterPasswordManager: MasterPasswordManager,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val syncManager: com.example.passvault.domain.sync.SyncManager,
+    private val googleDriveProvider: com.example.passvault.data.sync.GoogleDriveProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -39,6 +41,7 @@ class SettingsViewModel @Inject constructor(
 
     init {
         loadSettings()
+        trySilentRestore()
     }
 
     private fun loadSettings() {
@@ -49,6 +52,17 @@ class SettingsViewModel @Inject constructor(
                 biometricEnabled = biometricEnabled,
                 autoLockTime = autoLockTime
             )
+        }
+    }
+
+    /** App 重启后尝试静默恢复 Google Drive 登录状态 */
+    private fun trySilentRestore() {
+        viewModelScope.launch {
+            val result = googleDriveProvider.trySilentSignIn()
+            if (result.isSuccess) {
+                syncManager.currentProvider = googleDriveProvider
+                _uiState.value = _uiState.value.copy(currentProvider = "Google Drive")
+            }
         }
     }
 
@@ -189,10 +203,55 @@ class SettingsViewModel @Inject constructor(
             Result.failure(e)
         }
     }
+
+    /** 返回 Google 登录 Intent，由 UI 层通过 ActivityResultLauncher 发起 */
+    fun getGoogleSignInIntent(): Intent {
+        return googleDriveProvider.getSignInIntent()
+    }
+
+    /** 处理 Google 登录结果回调 */
+    fun handleGoogleSignInResult(data: Intent?) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSyncing = true, lastSyncMessage = "正在连接 Google Drive...")
+            val result = googleDriveProvider.handleSignInResult(data)
+            if (result.isSuccess) {
+                syncManager.currentProvider = googleDriveProvider
+                _uiState.value = _uiState.value.copy(
+                    currentProvider = "Google Drive",
+                    lastSyncMessage = "已绑定 Google Drive",
+                    isSyncing = false
+                )
+            } else {
+                syncManager.currentProvider = null
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    lastSyncMessage = "绑定失败: ${result.exceptionOrNull()?.message}"
+                )
+            }
+        }
+    }
+
+    fun syncNow() {
+        if (syncManager.currentProvider == null) {
+            _uiState.value = _uiState.value.copy(lastSyncMessage = "请先绑定云端账号")
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSyncing = true, lastSyncMessage = "正在同步中...")
+            val result = syncManager.performSync()
+            _uiState.value = _uiState.value.copy(
+                isSyncing = false,
+                lastSyncMessage = if (result.isSuccess) "同步成功" else "同步失败: ${result.exceptionOrNull()?.message}"
+            )
+        }
+    }
 }
 
 data class SettingsUiState(
     val biometricEnabled: Boolean = false,
     val autoLockTime: String = "5分钟",
-    val passwordStats: PasswordStatistics? = null
+    val passwordStats: PasswordStatistics? = null,
+    val isSyncing: Boolean = false,
+    val lastSyncMessage: String? = null,
+    val currentProvider: String? = null
 )
