@@ -1,0 +1,13 @@
+## Copy this file to local.properties and fill in the values
+## DO NOT commit local.properties to version control
+
+sdk.dir=YOUR_ANDROID_SDK_PATH
+
+# Google OAuth Web Client ID (from Google Cloud Console)
+GOOGLE_WEB_CLIENT_ID=
+
+# Dev: skip login screen for testing (set to true to bypass auth)
+DEV_SKIP_AUTH=false
+
+# Dev: fallback master password for sync testing when login is skipped
+DEV_MASTER_PASSWORD=
