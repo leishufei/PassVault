@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import com.example.passvault.data.model.Category
 import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.ui.theme.BrandColors
+import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
 import com.example.passvault.ui.theme.DarkSurface
@@ -215,7 +216,7 @@ fun PasswordListScreen(
                                                 modifier = Modifier
                                                     .size(10.dp)
                                                     .clip(CircleShape)
-                                                    .background(BrandColors[category.color % BrandColors.size])
+                                                    .background(safeBrandColor(category.color))
                                             )
                                             Text(
                                                 "${category.name} (${categoryCounts[category.id] ?: 0})",
@@ -351,8 +352,7 @@ fun PasswordListItem(
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
 
-    val colorIndex = if (password.iconColor != 0) password.iconColor % BrandColors.size else abs(password.title.hashCode()) % BrandColors.size
-    val bgColor = BrandColors[colorIndex]
+    val bgColor = safeBrandColor(if (password.iconColor != 0) password.iconColor else abs(password.title.hashCode()))
 
     Row(
         modifier = Modifier
@@ -457,7 +457,7 @@ fun CategoryFilterChip(
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (selected) BrandColors[category.color % BrandColors.size] else Color.White.copy(alpha = 0.07f))
+            .background(if (selected) safeBrandColor(category.color) else Color.White.copy(alpha = 0.07f))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -467,7 +467,7 @@ fun CategoryFilterChip(
             modifier = Modifier
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(if (selected) Color.White else BrandColors[category.color % BrandColors.size])
+                .background(if (selected) Color.White else safeBrandColor(category.color))
         )
         Text(
             text = category.name,

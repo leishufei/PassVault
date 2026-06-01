@@ -33,3 +33,7 @@ val BrandColors = listOf(
     Color(0xFF00B900),
     Color(0xFFFF6900)
 )
+
+/** Safe index into BrandColors — handles negative values from ARGB-overflow ints */
+fun safeBrandColor(index: Int): Color =
+    BrandColors[Math.floorMod(index, BrandColors.size)]

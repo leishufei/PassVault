@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.passvault.data.model.Category
 import com.example.passvault.ui.theme.BrandColors
+import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
 import com.example.passvault.ui.theme.DarkSurface
@@ -292,7 +293,7 @@ fun CategoryItem(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(BrandColors[category.color % BrandColors.size]),
+                .background(safeBrandColor(category.color)),
             contentAlignment = Alignment.Center
         ) {
             Box(

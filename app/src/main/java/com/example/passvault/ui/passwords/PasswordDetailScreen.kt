@@ -69,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import com.example.passvault.data.model.Category
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.ui.theme.BrandColors
+import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
 import com.example.passvault.ui.theme.DarkSurface
@@ -233,8 +234,7 @@ fun PasswordDetailScreen(
         ) {
             // Icon & Title
             Spacer(modifier = Modifier.height(16.dp))
-            val colorIndex = if (iconColor != 0) iconColor % BrandColors.size else abs(title.hashCode()) % BrandColors.size
-            val bgColor = BrandColors[colorIndex]
+            val bgColor = safeBrandColor(if (iconColor != 0) iconColor else abs(title.hashCode()))
 
             Box(
                 modifier = Modifier
@@ -321,7 +321,7 @@ fun PasswordDetailScreen(
                                 modifier = Modifier
                                     .size(10.dp)
                                     .clip(CircleShape)
-                                    .background(BrandColors[selectedCategory.color % BrandColors.size])
+                                    .background(safeBrandColor(selectedCategory.color))
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
@@ -830,7 +830,7 @@ fun CategorySelectionField(
                     modifier = Modifier
                         .size(12.dp)
                         .clip(CircleShape)
-                        .background(BrandColors[selectedCategory.color % BrandColors.size])
+                        .background(safeBrandColor(selectedCategory.color))
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -862,7 +862,7 @@ fun CategorySelectionField(
                                 modifier = Modifier
                                     .size(12.dp)
                                     .clip(CircleShape)
-                                    .background(BrandColors[category.color % BrandColors.size])
+                                    .background(safeBrandColor(category.color))
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(category.name, color = Color.White, fontSize = 14.sp)
