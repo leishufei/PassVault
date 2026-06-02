@@ -43,11 +43,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.passvault.ui.theme.PrimaryIndigo
-import com.example.passvault.ui.theme.PrimaryPurple
-import com.example.passvault.ui.theme.PrimaryPurpleLight
+import com.example.passvault.ui.theme.PrimaryBlue
+import com.example.passvault.ui.theme.PrimaryBlueLight
+import com.example.passvault.ui.theme.TextPrimary
 import com.example.passvault.ui.theme.TextSecondary
-import com.example.passvault.ui.theme.TextTertiary
+import com.example.passvault.ui.theme.LightSurfaceVariant
+import com.example.passvault.ui.theme.CardBorder
 
 @Composable
 fun LogoHeader() {
@@ -58,7 +59,7 @@ fun LogoHeader() {
                 .clip(RoundedCornerShape(20.dp))
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(PrimaryPurple, PrimaryIndigo)
+                        colors = listOf(PrimaryBlue, PrimaryBlueLight)
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -77,7 +78,7 @@ fun LogoHeader() {
             text = "PassVault",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = TextPrimary,
             letterSpacing = 0.5.sp
         )
 
@@ -118,13 +119,13 @@ fun AuthTextField(
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = Color.White.copy(alpha = 0.07f),
-            unfocusedContainerColor = Color.White.copy(alpha = 0.07f),
-            disabledContainerColor = Color.White.copy(alpha = 0.07f),
-            focusedBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.White.copy(alpha = 0.1f),
-            unfocusedBorderColor = if (isError) MaterialTheme.colorScheme.error else Color.White.copy(alpha = 0.1f),
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White
+            focusedContainerColor = LightSurfaceVariant,
+            unfocusedContainerColor = LightSurfaceVariant,
+            disabledContainerColor = LightSurfaceVariant,
+            focusedBorderColor = if (isError) MaterialTheme.colorScheme.error else PrimaryBlue,
+            unfocusedBorderColor = if (isError) MaterialTheme.colorScheme.error else CardBorder,
+            focusedTextColor = TextPrimary,
+            unfocusedTextColor = TextPrimary
         )
     )
 }
@@ -193,7 +194,7 @@ fun SetupScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo)),
+                        Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)),
                         RoundedCornerShape(16.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -279,7 +280,7 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo)),
+                        Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)),
                         RoundedCornerShape(16.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -299,15 +300,15 @@ fun LoginScreen(
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape)
-                        .background(PrimaryPurple.copy(alpha = 0.15f))
-                        .border(1.5.dp, PrimaryPurple.copy(alpha = 0.4f), CircleShape),
+                        .background(PrimaryBlue.copy(alpha = 0.1f))
+                        .border(1.5.dp, PrimaryBlue.copy(alpha = 0.3f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Fingerprint,
                         contentDescription = null,
                         modifier = Modifier.size(40.dp),
-                        tint = PrimaryPurple
+                        tint = PrimaryBlue
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -319,7 +320,7 @@ fun LoginScreen(
 
         Text(
             text = "忘记主密码?",
-            color = PrimaryPurple,
+            color = PrimaryBlue,
             fontSize = 14.sp,
             modifier = Modifier
                 .padding(bottom = 32.dp)

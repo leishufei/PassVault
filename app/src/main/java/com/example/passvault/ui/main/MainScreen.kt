@@ -37,7 +37,9 @@ import com.example.passvault.ui.generator.GeneratorScreen
 import com.example.passvault.ui.passwords.PasswordListScreen
 import com.example.passvault.ui.passwords.PasswordViewModel
 import com.example.passvault.ui.settings.SettingsScreen
-import com.example.passvault.ui.theme.PrimaryPurpleLight
+import com.example.passvault.ui.theme.NavBarBackground
+import com.example.passvault.ui.theme.NavBarIndicator
+import com.example.passvault.ui.theme.PrimaryBlue
 import com.example.passvault.ui.theme.TextTertiary
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
@@ -60,7 +62,7 @@ fun MainScreen(
 
     Scaffold(
         containerColor = Color.Transparent,
-        contentColor = Color.White,
+        contentColor = Color.Unspecified,
         bottomBar = {
             BottomNavBar(navController = navController, items = items)
         }
@@ -106,8 +108,8 @@ fun BottomNavBar(
     val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
-        containerColor = Color(0xFF0E0C20),
-        tonalElevation = 0.dp,
+        containerColor = NavBarBackground,
+        tonalElevation = 8.dp,
         modifier = Modifier
             .height(72.dp)
     ) {
@@ -115,11 +117,11 @@ fun BottomNavBar(
             val active = currentRoute == item.route
 
             val iconColor by animateColorAsState(
-                targetValue = if (active) PrimaryPurpleLight else TextTertiary,
+                targetValue = if (active) PrimaryBlue else TextTertiary,
                 label = "navIconColor"
             )
             val labelColor by animateColorAsState(
-                targetValue = if (active) PrimaryPurpleLight else TextTertiary,
+                targetValue = if (active) PrimaryBlue else TextTertiary,
                 label = "navLabelColor"
             )
 
@@ -137,17 +139,17 @@ fun BottomNavBar(
                 icon = {
                     Box(
                         modifier = Modifier
-                            .size(width = 40.dp, height = 24.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(width = 48.dp, height = 32.dp)
+                            .clip(RoundedCornerShape(16.dp))
                             .background(
-                                if (active) Color(0x337C3AED) else Color.Transparent
+                                if (active) NavBarIndicator else Color.Transparent
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = item.icon,
                             contentDescription = item.title,
-                            modifier = Modifier.size(20.dp),
+                            modifier = Modifier.size(22.dp),
                             tint = iconColor
                         )
                     }

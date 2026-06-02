@@ -39,7 +39,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -64,9 +63,12 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.DarkSurface
-import com.example.passvault.ui.theme.PrimaryPurple
+import com.example.passvault.ui.theme.DialogBackground
+import com.example.passvault.ui.theme.DividerColor
+import com.example.passvault.ui.theme.LightSurfaceVariant
+import com.example.passvault.ui.theme.PrimaryBlue
 import com.example.passvault.ui.theme.SuccessGreen
+import com.example.passvault.ui.theme.TextPrimary
 import com.example.passvault.ui.theme.TextSecondary
 import com.example.passvault.ui.theme.TextTertiary
 import com.example.passvault.ui.theme.WarningYellow
@@ -126,7 +128,7 @@ fun SettingsScreen(
             text = "设置",
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = TextPrimary,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         )
 
@@ -147,7 +149,7 @@ fun SettingsScreen(
             ) {
                 SettingItem(
                     icon = Icons.Default.Security,
-                    iconBg = Color(0xFF0F3D24),
+                    iconBg = SuccessGreen.copy(alpha = 0.15f),
                     iconTint = SuccessGreen,
                     title = "保险库",
                     subtitle = "查看安全评分",
@@ -159,7 +161,7 @@ fun SettingsScreen(
                 SettingDivider()
                 SettingItem(
                     icon = Icons.Default.Timer,
-                    iconBg = Color(0xFF3D2A0A),
+                    iconBg = WarningYellow.copy(alpha = 0.15f),
                     iconTint = WarningYellow,
                     title = "自动锁定",
                     subtitle = uiState.autoLockTime,
@@ -168,8 +170,8 @@ fun SettingsScreen(
                 SettingDivider()
                 SettingItem(
                     icon = Icons.Default.Lock,
-                    iconBg = Color(0xFF1E1A3D),
-                    iconTint = Color(0xFF818CF8),
+                    iconBg = Color(0xFF0284C7).copy(alpha = 0.15f),
+                    iconTint = Color(0xFF0284C7),
                     title = "主密码",
                     subtitle = "修改主密码",
                     onClick = { showMasterPasswordDialog = true }
@@ -177,8 +179,8 @@ fun SettingsScreen(
                 SettingDivider()
                 SettingSwitchItem(
                     icon = Icons.Default.Fingerprint,
-                    iconBg = Color(0xFF2D1A45),
-                    iconTint = Color(0xFFA78BFA),
+                    iconBg = PrimaryBlue.copy(alpha = 0.15f),
+                    iconTint = PrimaryBlue,
                     title = "生物识别解锁",
                     subtitle = "使用指纹或面部解锁",
                     checked = uiState.biometricEnabled,
@@ -199,8 +201,8 @@ fun SettingsScreen(
             ) {
                 SettingItem(
                     icon = Icons.Default.Backup,
-                    iconBg = Color(0xFF0C3025),
-                    iconTint = Color(0xFF34D399),
+                    iconBg = SuccessGreen.copy(alpha = 0.15f),
+                    iconTint = SuccessGreen,
                     title = "导出密码",
                     subtitle = "导出为 CSV 格式",
                     onClick = { backupLauncher.launch("PassVault_Backup.csv") }
@@ -208,8 +210,8 @@ fun SettingsScreen(
                 SettingDivider()
                 SettingItem(
                     icon = Icons.Default.Restore,
-                    iconBg = Color(0xFF0C2040),
-                    iconTint = Color(0xFF60A5FA),
+                    iconBg = Color(0xFF3B82F6).copy(alpha = 0.15f),
+                    iconTint = Color(0xFF3B82F6),
                     title = "导入密码",
                     subtitle = "从 CSV 导入密码",
                     onClick = { restoreLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain")) }
@@ -228,8 +230,8 @@ fun SettingsScreen(
             ) {
                 SettingItem(
                     icon = Icons.Default.Security,
-                    iconBg = Color(0xFF1E1A3D),
-                    iconTint = Color(0xFF818CF8),
+                    iconBg = Color(0xFF8B5CF6).copy(alpha = 0.15f),
+                    iconTint = Color(0xFF8B5CF6),
                     title = "分类管理",
                     subtitle = "管理密码分类",
                     onClick = onNavigateToCategoryManagement
@@ -248,8 +250,8 @@ fun SettingsScreen(
             ) {
                 SettingItem(
                     icon = if (uiState.currentProvider != null) Icons.Default.CloudDone else Icons.Default.CloudOff,
-                    iconBg = Color(0xFF0C2040),
-                    iconTint = if (uiState.currentProvider != null) SuccessGreen else Color(0xFF60A5FA),
+                    iconBg = if (uiState.currentProvider != null) SuccessGreen.copy(alpha = 0.15f) else Color(0xFF3B82F6).copy(alpha = 0.15f),
+                    iconTint = if (uiState.currentProvider != null) SuccessGreen else Color(0xFF3B82F6),
                     title = if (uiState.currentProvider != null) "已绑定 ${uiState.currentProvider}" else "绑定 Google Drive",
                     subtitle = "实现跨设备密码无缝同步",
                     onClick = {
@@ -261,14 +263,14 @@ fun SettingsScreen(
                 SettingDivider()
                 SettingItem(
                     icon = Icons.Default.CloudSync,
-                    iconBg = Color(0xFF2D1A45),
-                    iconTint = Color(0xFFA78BFA),
+                    iconBg = PrimaryBlue.copy(alpha = 0.15f),
+                    iconTint = PrimaryBlue,
                     title = "立即同步",
                     subtitle = uiState.lastSyncMessage ?: "与云端进行双向合并同步",
                     onClick = { viewModel.syncNow() },
                     trailing = {
                         if (uiState.isSyncing) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = PrimaryPurple, strokeWidth = 2.dp)
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), color = PrimaryBlue, strokeWidth = 2.dp)
                         } else {
                             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
                         }
@@ -289,8 +291,8 @@ fun SettingsScreen(
             ) {
                 SettingItem(
                     icon = Icons.Default.Shield,
-                    iconBg = Color(0xFF2A1545),
-                    iconTint = PrimaryPurple,
+                    iconBg = PrimaryBlue.copy(alpha = 0.15f),
+                    iconTint = PrimaryBlue,
                     title = "关于 PassVault",
                     subtitle = "版本 1.0.0",
                     trailing = { Text("1.0.0", color = TextTertiary, fontSize = 13.sp) }
@@ -305,8 +307,8 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .height(52.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFEF4444).copy(alpha = 0.12f))
-                    .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                    .background(Color(0xFFFEF2F2))
+                    .border(1.dp, Color(0xFFFECACA), RoundedCornerShape(16.dp))
                     .clickable { onLock() },
                 contentAlignment = Alignment.Center
             ) {
@@ -325,27 +327,27 @@ fun SettingsScreen(
         val stats = uiState.passwordStats
         AlertDialog(
             onDismissRequest = { showSafeDialog = false },
-            title = { Text("安全评分分析", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("安全评分分析", color = TextPrimary, fontWeight = FontWeight.Bold) },
             text = {
                 if (stats == null) {
-                    Text("加载中...", color = Color.White)
+                    Text("加载中...", color = TextSecondary)
                 } else if (stats.totalCount == 0) {
-                    Text("暂无密码数据", color = Color.White)
+                    Text("暂无密码数据", color = TextSecondary)
                 } else {
                     Column {
                         Text("综合评分: ${stats.averageStrength}/100", color = SuccessGreen, fontSize = 24.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(16.dp))
-                        Text("• 强密码: ${stats.strongCount}", color = Color.White)
-                        Text("• 中等密码: ${stats.totalCount - stats.strongCount - stats.weakCount}", color = Color.White)
-                        Text("• 弱密码: ${stats.weakCount}", color = Color.White)
-                        Text("• 重复使用: ${stats.duplicateCount}", color = if (stats.duplicateCount > 0) WarningYellow else Color.White)
+                        Text("• 强密码: ${stats.strongCount}", color = TextPrimary)
+                        Text("• 中等密码: ${stats.totalCount - stats.strongCount - stats.weakCount}", color = TextPrimary)
+                        Text("• 弱密码: ${stats.weakCount}", color = TextPrimary)
+                        Text("• 重复使用: ${stats.duplicateCount}", color = if (stats.duplicateCount > 0) WarningYellow else TextPrimary)
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showSafeDialog = false }) { Text("确定", color = PrimaryPurple) }
+                TextButton(onClick = { showSafeDialog = false }) { Text("确定", color = PrimaryBlue) }
             },
-            containerColor = DarkSurface,
+            containerColor = DialogBackground,
             shape = RoundedCornerShape(24.dp)
         )
     }
@@ -354,7 +356,7 @@ fun SettingsScreen(
     if (showAutoLockDialog) {
         AlertDialog(
             onDismissRequest = { showAutoLockDialog = false },
-            title = { Text("自动锁定时间", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("自动锁定时间", color = TextPrimary, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     autoLockOptions.forEach { option ->
@@ -363,8 +365,8 @@ fun SettingsScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(
-                                    if (uiState.autoLockTime == option) PrimaryPurple.copy(alpha = 0.2f)
-                                    else Color.White.copy(alpha = 0.05f)
+                                    if (uiState.autoLockTime == option) LightSurfaceVariant
+                                    else Color.Transparent
                                 )
                                 .clickable {
                                     viewModel.setAutoLockTime(option)
@@ -376,18 +378,19 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 text = option,
-                                color = if (uiState.autoLockTime == option) Color(0xFFA78BFA) else Color(0xFFD0D0F0),
-                                fontSize = 15.sp
+                                color = if (uiState.autoLockTime == option) PrimaryBlue else TextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = if (uiState.autoLockTime == option) FontWeight.SemiBold else FontWeight.Normal
                             )
                             if (uiState.autoLockTime == option) {
-                                Icon(Icons.Default.Security, contentDescription = null, tint = PrimaryPurple, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Security, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
                 }
             },
             confirmButton = {},
-            containerColor = DarkSurface,
+            containerColor = DialogBackground,
             shape = RoundedCornerShape(24.dp)
         )
     }
@@ -400,7 +403,7 @@ fun SettingsScreen(
 
         AlertDialog(
             onDismissRequest = { showMasterPasswordDialog = false },
-            title = { Text("修改主密码", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("修改主密码", color = TextPrimary, fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -410,12 +413,12 @@ fun SettingsScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            focusedBorderColor = Color.White.copy(alpha = 0.1f),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f)
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = LightSurfaceVariant,
+                            unfocusedContainerColor = LightSurfaceVariant,
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color.Transparent
                         )
                     )
                     OutlinedTextField(
@@ -425,12 +428,12 @@ fun SettingsScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         shape = RoundedCornerShape(16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.06f),
-                            focusedBorderColor = Color.White.copy(alpha = 0.1f),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f)
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = LightSurfaceVariant,
+                            unfocusedContainerColor = LightSurfaceVariant,
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color.Transparent
                         )
                     )
                     errorMessage?.let {
@@ -441,7 +444,7 @@ fun SettingsScreen(
             confirmButton = {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(onClick = { showMasterPasswordDialog = false }) {
-                        Text("取消", color = Color(0xFFD0D0F0))
+                        Text("取消", color = TextSecondary)
                     }
                     TextButton(
                         onClick = {
@@ -456,10 +459,10 @@ fun SettingsScreen(
                                     .onFailure { errorMessage = it.message }
                             }
                         }
-                    ) { Text("确认", color = PrimaryPurple, fontWeight = FontWeight.SemiBold) }
+                    ) { Text("确认", color = PrimaryBlue, fontWeight = FontWeight.SemiBold) }
                 }
             },
-            containerColor = DarkSurface,
+            containerColor = DialogBackground,
             shape = RoundedCornerShape(24.dp)
         )
     }
@@ -483,7 +486,7 @@ private fun SettingDivider() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .height(1.dp)
-            .background(Color.White.copy(alpha = 0.06f))
+            .background(DividerColor)
     )
 }
 
@@ -517,16 +520,16 @@ fun SettingItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = Color(0xFFD0D0F0), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
             if (subtitle != null) {
-                Text(subtitle, color = TextTertiary, fontSize = 12.sp)
+                Text(subtitle, color = TextSecondary, fontSize = 13.sp)
             }
         }
 
         if (trailing != null) {
             trailing()
         } else {
-            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -560,9 +563,9 @@ fun SettingSwitchItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = Color(0xFFD0D0F0), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(title, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
             if (subtitle != null) {
-                Text(subtitle, color = TextTertiary, fontSize = 12.sp)
+                Text(subtitle, color = TextSecondary, fontSize = 13.sp)
             }
         }
 
@@ -571,9 +574,9 @@ fun SettingSwitchItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = PrimaryPurple,
+                checkedTrackColor = PrimaryBlue,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.15f)
+                uncheckedTrackColor = Color(0xFFE2E8F0)
             )
         )
     }

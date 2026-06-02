@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
@@ -46,7 +45,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -57,13 +55,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.passvault.data.model.Category
 import com.example.passvault.data.repository.PasswordEntryListItem
-import com.example.passvault.ui.theme.BrandColors
 import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.DarkSurface
-import com.example.passvault.ui.theme.PrimaryIndigo
-import com.example.passvault.ui.theme.PrimaryPurple
+import com.example.passvault.ui.theme.DialogBackground
+import com.example.passvault.ui.theme.PrimaryBlue
+import com.example.passvault.ui.theme.LightSurfaceVariant
+import com.example.passvault.ui.theme.TextPrimary
 import com.example.passvault.ui.theme.TextSecondary
 import com.example.passvault.ui.theme.TextTertiary
 import com.example.passvault.ui.theme.WarningYellow
@@ -109,19 +107,19 @@ fun PasswordListScreen(
                             Icon(Icons.Default.Search, contentDescription = null, tint = TextTertiary, modifier = Modifier.size(16.dp))
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.White.copy(alpha = 0.07f),
-                            unfocusedContainerColor = Color.White.copy(alpha = 0.07f),
-                            focusedBorderColor = Color.White.copy(alpha = 0.1f),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedContainerColor = LightSurfaceVariant,
+                            unfocusedContainerColor = LightSurfaceVariant,
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary
                         ),
                         shape = RoundedCornerShape(16.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "取消",
-                        color = PrimaryPurple,
+                        color = PrimaryBlue,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
                             isSearchActive = false
@@ -133,7 +131,7 @@ fun PasswordListScreen(
                         text = "密码",
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = TextPrimary
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -141,11 +139,11 @@ fun PasswordListScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.07f))
+                                .background(LightSurfaceVariant)
                                 .clickable { isSearchActive = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFFB0B0CC), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -172,7 +170,7 @@ fun PasswordListScreen(
                         Row(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
-                                .background(if (filterMode is PasswordFilter.CATEGORY) PrimaryPurple else Color.White.copy(alpha = 0.07f))
+                                .background(if (filterMode is PasswordFilter.CATEGORY) PrimaryBlue else LightSurfaceVariant)
                                 .clickable { isCategoryDropdownExpanded = true }
                                 .padding(start = 12.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -182,26 +180,26 @@ fun PasswordListScreen(
                                 imageVector = Icons.Default.Lock,
                                 contentDescription = null,
                                 modifier = Modifier.size(13.dp),
-                                tint = if (filterMode is PasswordFilter.CATEGORY) Color.White else TextSecondary
+                                tint = if (filterMode is PasswordFilter.CATEGORY) Color.White else PrimaryBlue
                             )
                             Text(
                                 text = currentCategoryLabel,
                                 fontSize = 12.sp,
-                                fontWeight = if (filterMode is PasswordFilter.CATEGORY) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (filterMode is PasswordFilter.CATEGORY) Color.White else TextSecondary
+                                fontWeight = if (filterMode is PasswordFilter.CATEGORY) FontWeight.SemiBold else FontWeight.Medium,
+                                color = if (filterMode is PasswordFilter.CATEGORY) Color.White else PrimaryBlue
                             )
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = if (filterMode is PasswordFilter.CATEGORY) Color.White else TextSecondary
+                                tint = if (filterMode is PasswordFilter.CATEGORY) Color.White else PrimaryBlue
                             )
                         }
 
                         DropdownMenu(
                             expanded = isCategoryDropdownExpanded,
                             onDismissRequest = { isCategoryDropdownExpanded = false },
-                            modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
+                            modifier = Modifier.background(DialogBackground, RoundedCornerShape(16.dp))
                         ) {
                             categories.forEach { category ->
                                 val isSelected = filterMode is PasswordFilter.CATEGORY &&
@@ -220,7 +218,7 @@ fun PasswordListScreen(
                                             )
                                             Text(
                                                 "${category.name} (${categoryCounts[category.id] ?: 0})",
-                                                color = if (isSelected) PrimaryPurple else Color.White,
+                                                color = if (isSelected) PrimaryBlue else TextPrimary,
                                                 fontSize = 14.sp,
                                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                                             )
@@ -301,11 +299,11 @@ fun PasswordListScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 24.dp, bottom = 24.dp)
-                .size(40.dp),
+                .size(56.dp),
             shape = CircleShape,
-            containerColor = PrimaryPurple
+            containerColor = PrimaryBlue
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(24.dp))
         }
     }
 }
@@ -320,7 +318,7 @@ fun PillFilterChip(
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (selected) PrimaryPurple else Color.White.copy(alpha = 0.07f))
+            .background(if (selected) PrimaryBlue else LightSurfaceVariant)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -330,13 +328,13 @@ fun PillFilterChip(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(13.dp),
-            tint = if (selected) Color.White else TextSecondary
+            tint = if (selected) Color.White else PrimaryBlue
         )
         Text(
             text = text,
             fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) Color.White else TextSecondary
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+            color = if (selected) Color.White else PrimaryBlue
         )
     }
 }
@@ -375,7 +373,7 @@ fun PasswordListItem(
             Text(
                 text = password.title.take(1).uppercase(),
                 color = Color.White,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -386,9 +384,9 @@ fun PasswordListItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = password.title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -407,21 +405,21 @@ fun PasswordListItem(
                 imageVector = if (password.isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                 contentDescription = "Favorite",
                 tint = if (password.isFavorite) WarningYellow else TextTertiary,
-                modifier = Modifier.size(16.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
         Box {
             IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = TextTertiary, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = TextTertiary, modifier = Modifier.size(20.dp))
             }
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
-                modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
+                modifier = Modifier.background(DialogBackground, RoundedCornerShape(16.dp))
             ) {
                 DropdownMenuItem(
-                    text = { Text("复制密码", color = Color.White, fontSize = 14.sp) },
+                    text = { Text("复制密码", color = TextPrimary, fontSize = 14.sp) },
                     onClick = {
                         onCopyPassword { decryptedPassword ->
                             clipboardManager.setText(AnnotatedString(decryptedPassword))
@@ -430,7 +428,7 @@ fun PasswordListItem(
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("复制用户名", color = Color.White, fontSize = 14.sp) },
+                    text = { Text("复制用户名", color = TextPrimary, fontSize = 14.sp) },
                     onClick = {
                         clipboardManager.setText(AnnotatedString(password.username))
                         showMenu = false
@@ -445,35 +443,5 @@ fun PasswordListItem(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun CategoryFilterChip(
-    category: com.example.passvault.data.model.Category,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (selected) safeBrandColor(category.color) else Color.White.copy(alpha = 0.07f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(if (selected) Color.White else safeBrandColor(category.color))
-        )
-        Text(
-            text = category.name,
-            fontSize = 12.sp,
-            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (selected) Color.White else TextSecondary
-        )
     }
 }

@@ -1,5 +1,13 @@
 package com.example.passvault.ui.passwords
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,7 +35,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Visibility
@@ -40,12 +47,8 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +59,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -72,14 +77,18 @@ import com.example.passvault.ui.theme.BrandColors
 import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.DarkSurface
-import com.example.passvault.ui.theme.PrimaryIndigo
-import com.example.passvault.ui.theme.PrimaryPurple
-import com.example.passvault.ui.theme.PrimaryPurpleLight
+import com.example.passvault.ui.theme.DialogBackground
+import com.example.passvault.ui.theme.LightSurfaceVariant
+import com.example.passvault.ui.theme.PrimaryBlue
+import com.example.passvault.ui.theme.PrimaryBlueLight
 import com.example.passvault.ui.theme.SuccessGreen
+import com.example.passvault.ui.theme.TextPrimary
 import com.example.passvault.ui.theme.TextSecondary
 import com.example.passvault.ui.theme.TextTertiary
 import com.example.passvault.ui.theme.WarningYellow
+import com.example.passvault.ui.theme.AlertPulseRed
+import com.example.passvault.ui.theme.GlowGreen
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -148,14 +157,14 @@ fun PasswordDetailScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.07f))
+                    .background(LightSurfaceVariant)
                     .clickable {
                         if (isEditing && !isNewPassword) isEditing = false
                         else onNavigateBack()
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color(0xFFB0B0CC), modifier = Modifier.size(18.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,7 +173,7 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(if (isFavorite) WarningYellow.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.07f))
+                            .background(if (isFavorite) WarningYellow.copy(alpha = 0.15f) else LightSurfaceVariant)
                             .clickable {
                                 isFavorite = !isFavorite
                                 passwordId?.let { viewModel.toggleFavorite(it, isFavorite) }
@@ -174,7 +183,7 @@ fun PasswordDetailScreen(
                         Icon(
                             imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                             contentDescription = "Favorite",
-                            tint = if (isFavorite) WarningYellow else Color(0xFFB0B0CC),
+                            tint = if (isFavorite) WarningYellow else PrimaryBlue,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -182,11 +191,11 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.07f))
+                            .background(LightSurfaceVariant)
                             .clickable { isEditing = true },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFFB0B0CC), modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Edit, contentDescription = "Edit", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
                     }
                 }
                 if (isEditing) {
@@ -194,7 +203,7 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(if (title.isNotEmpty() && password.isNotEmpty()) PrimaryPurple else Color.White.copy(alpha = 0.07f))
+                            .background(if (title.isNotEmpty() && password.isNotEmpty()) PrimaryBlue else LightSurfaceVariant)
                             .clickable(enabled = title.isNotEmpty() && password.isNotEmpty()) {
                                 if (isNewPassword) {
                                     viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0, categoryId)
@@ -214,7 +223,7 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.07f))
+                            .background(Color(0xFFEF4444).copy(alpha = 0.1f))
                             .clickable { showDeleteDialog = true },
                         contentAlignment = Alignment.Center
                     ) {
@@ -240,7 +249,7 @@ fun PasswordDetailScreen(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(if (title.isEmpty()) DarkSurface else bgColor)
+                    .background(if (title.isEmpty()) LightSurfaceVariant else bgColor)
                     .clickable(enabled = isEditing) {
                         if (title.isNotEmpty()) iconColor = (iconColor + 1) % BrandColors.size
                     },
@@ -249,13 +258,13 @@ fun PasswordDetailScreen(
                 if (title.isNotEmpty()) {
                     Text(title.take(1).uppercase(), color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 } else {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = TextSecondary, modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
                 }
             }
 
             if (!isEditing && title.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(title, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -287,7 +296,9 @@ fun PasswordDetailScreen(
                             isEditing = false
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     enabled = title.isNotEmpty() && password.isNotEmpty()
@@ -295,7 +306,7 @@ fun PasswordDetailScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo)), RoundedCornerShape(16.dp)),
+                            .background(Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)), RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(if (isNewPassword) "添加密码" else "保存更改", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
@@ -303,7 +314,6 @@ fun PasswordDetailScreen(
                 }
             } else {
                 // View mode - field cards
-                // Category Card
                 val selectedCategory = categories.find { it.id == categoryId }
                 Column(
                     modifier = Modifier
@@ -326,13 +336,13 @@ fun PasswordDetailScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = selectedCategory.name,
-                                fontSize = 14.sp,
-                                color = Color.White
+                                fontSize = 15.sp,
+                                color = TextPrimary
                             )
                         } else {
                             Text(
                                 text = "未分类",
-                                fontSize = 14.sp,
+                                fontSize = 15.sp,
                                 color = TextTertiary
                             )
                         }
@@ -369,7 +379,7 @@ fun PasswordDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            containerColor = DarkSurface,
+            containerColor = DialogBackground,
             shape = RoundedCornerShape(24.dp),
             title = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -377,13 +387,13 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(64.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFEF4444).copy(alpha = 0.15f)),
+                            .background(Color(0xFFEF4444).copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(28.dp))
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("删除 $title?", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text("删除 $title?", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 }
             },
             text = {
@@ -393,17 +403,21 @@ fun PasswordDetailScreen(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     TextButton(
                         onClick = { showDeleteDialog = false },
-                        modifier = Modifier.weight(1f).height(44.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.textButtonColors(containerColor = Color.White.copy(alpha = 0.08f))
-                    ) { Text("取消", color = Color(0xFFD0D0F0), fontSize = 15.sp) }
+                        colors = ButtonDefaults.textButtonColors(containerColor = LightSurfaceVariant)
+                    ) { Text("取消", color = TextSecondary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
                     TextButton(
                         onClick = {
                             passwordId?.let { viewModel.deletePassword(it) }
                             showDeleteDialog = false
                             onNavigateBack()
                         },
-                        modifier = Modifier.weight(1f).height(44.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFFEF4444))
                     ) { Text("删除", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
@@ -431,6 +445,20 @@ fun FieldCard(
     isLink: Boolean = false,
     onCopy: (() -> Unit)? = null
 ) {
+    var showGlow by remember { mutableStateOf(false) }
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (showGlow) 1f else 0f,
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "glow"
+    )
+
+    LaunchedEffect(showGlow) {
+        if (showGlow) {
+            delay(400)
+            showGlow = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -444,20 +472,38 @@ fun FieldCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = value,
-                fontSize = 14.sp,
-                color = if (isLink) Color(0xFF818CF8) else Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isLink) Color(0xFF0284C7) else TextPrimary,
                 modifier = Modifier.weight(1f)
             )
             if (onCopy != null) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(32.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
-                        .clickable { onCopy() },
+                        .background(LightSurfaceVariant)
+                        .drawBehind {
+                            if (glowAlpha > 0f) {
+                                drawRoundRect(
+                                    color = GlowGreen.copy(alpha = glowAlpha * 0.5f),
+                                    size = size,
+                                    cornerRadius = CornerRadius(8.dp.toPx())
+                                )
+                            }
+                        }
+                        .clickable {
+                            onCopy()
+                            showGlow = true
+                        },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = TextSecondary, modifier = Modifier.size(14.dp))
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = "Copy",
+                        tint = if (glowAlpha > 0f) GlowGreen else PrimaryBlue,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -471,6 +517,31 @@ fun PasswordFieldCard(
     onVisibilityToggle: () -> Unit,
     onCopy: () -> Unit
 ) {
+    var showGlow by remember { mutableStateOf(false) }
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (showGlow) 1f else 0f,
+        animationSpec = tween(400, easing = FastOutSlowInEasing),
+        label = "glow"
+    )
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
+    LaunchedEffect(showGlow) {
+        if (showGlow) {
+            delay(400)
+            showGlow = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -484,34 +555,53 @@ fun PasswordFieldCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = if (visible) password else "••••••••••••••",
-                fontSize = 15.sp,
-                color = Color.White,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = TextPrimary,
                 letterSpacing = if (visible) 0.sp else 3.sp,
                 modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = onVisibilityToggle, modifier = Modifier.size(28.dp)) {
+            IconButton(onClick = onVisibilityToggle, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                     contentDescription = null,
                     tint = TextSecondary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
             Spacer(modifier = Modifier.width(4.dp))
             Box(
                 modifier = Modifier
-                    .size(28.dp)
+                    .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .clickable { onCopy() },
+                    .background(LightSurfaceVariant)
+                    .drawBehind {
+                        if (glowAlpha > 0f) {
+                            drawRoundRect(
+                                color = GlowGreen.copy(alpha = glowAlpha * 0.5f),
+                                size = size,
+                                cornerRadius = CornerRadius(8.dp.toPx())
+                            )
+                        }
+                    }
+                    .clickable {
+                        onCopy()
+                        showGlow = true
+                    },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = TextSecondary, modifier = Modifier.size(14.dp))
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy",
+                    tint = if (glowAlpha > 0f) GlowGreen else PrimaryBlue,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
 
         // Strength bar
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+        val isWeak = password.length <= 8
         val strengthText = when {
             password.length > 12 -> "很强"
             password.length > 8 -> "中等"
@@ -520,7 +610,7 @@ fun PasswordFieldCard(
         val strengthColor = when {
             password.length > 12 -> SuccessGreen
             password.length > 8 -> WarningYellow
-            else -> Color(0xFFEF4444)
+            else -> AlertPulseRed.copy(alpha = pulseAlpha) // Pulse animation for weak password
         }
         val strengthPercent = when {
             password.length > 12 -> 1.0f
@@ -533,15 +623,15 @@ fun PasswordFieldCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("强度:", fontSize = 12.sp, color = TextSecondary)
-            Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.SemiBold)
+            Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
         }
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp)
                 .clip(RoundedCornerShape(3.dp))
-                .background(Color.White.copy(alpha = 0.1f))
+                .background(LightSurfaceVariant)
         ) {
             Box(
                 modifier = Modifier
@@ -561,8 +651,8 @@ fun TimestampCard(createdAt: Long, updatedAt: Long) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White.copy(alpha = 0.03f))
-            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+            .background(LightSurfaceVariant.copy(alpha = 0.5f))
+            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -626,14 +716,15 @@ fun EditableFields(
                         onValueChange = onPasswordChange,
                         modifier = Modifier.fillMaxWidth(),
                         textStyle = TextStyle(
-                            color = Color.White,
-                            fontSize = 14.sp
+                            color = TextPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
                         ),
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true,
                         decorationBox = { innerTextField ->
                             if (password.isEmpty()) {
-                                Text("输入或生成密码", color = TextTertiary, fontSize = 14.sp)
+                                Text("输入或生成密码", color = TextTertiary, fontSize = 15.sp)
                             }
                             innerTextField()
                         }
@@ -642,23 +733,24 @@ fun EditableFields(
                 IconButton(onClick = onPasswordVisibilityChange, modifier = Modifier.size(32.dp)) {
                     Icon(
                         imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = null, tint = TextSecondary, modifier = Modifier.size(16.dp)
+                        contentDescription = null, tint = TextSecondary, modifier = Modifier.size(18.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(PrimaryPurple.copy(alpha = 0.2f))
+                    .background(LightSurfaceVariant)
                     .clickable { onGenerateClick() }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("生成密码", color = PrimaryPurpleLight, fontSize = 12.sp)
+                Text("生成强密码", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
             }
 
             if (password.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                val isWeak = password.length <= 8
                 val strengthText = when {
                     password.length > 12 -> "很强"
                     password.length > 8 -> "中等"
@@ -667,7 +759,7 @@ fun EditableFields(
                 val strengthColor = when {
                     password.length > 12 -> SuccessGreen
                     password.length > 8 -> WarningYellow
-                    else -> Color(0xFFEF4444)
+                    else -> AlertPulseRed
                 }
                 val strengthPercent = when {
                     password.length > 12 -> 1.0f
@@ -676,11 +768,11 @@ fun EditableFields(
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("强度:", fontSize = 12.sp, color = TextSecondary)
-                    Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.SemiBold)
+                    Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(Color.White.copy(alpha = 0.1f))
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(LightSurfaceVariant)
                 ) {
                     Box(modifier = Modifier.fillMaxWidth(strengthPercent).height(6.dp).clip(RoundedCornerShape(3.dp)).background(strengthColor))
                 }
@@ -719,14 +811,15 @@ fun DetailTextField(
                     onValueChange = onValueChange,
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = TextStyle(
-                        color = Color.White,
-                        fontSize = 14.sp
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
                     ),
                     singleLine = singleLine,
                     readOnly = readOnly,
                     decorationBox = { innerTextField ->
                         if (value.isEmpty()) {
-                            Text(placeholder, color = TextTertiary, fontSize = 14.sp)
+                            Text(placeholder, color = TextTertiary, fontSize = 15.sp)
                         }
                         innerTextField()
                     }
@@ -735,13 +828,13 @@ fun DetailTextField(
             if (onCopy != null && value.isNotEmpty()) {
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(32.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.08f))
+                        .background(LightSurfaceVariant)
                         .clickable { onCopy() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = TextSecondary, modifier = Modifier.size(14.dp))
+                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -773,16 +866,16 @@ fun PasswordGeneratorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = DarkSurface,
+        containerColor = DialogBackground,
         shape = RoundedCornerShape(24.dp),
-        title = { Text("生成密码", color = Color.White, fontWeight = FontWeight.Bold) },
+        title = { Text("生成强密码", color = TextPrimary, fontWeight = FontWeight.Bold) },
         text = {
             Column {
                 Text(
                     text = generatedPassword,
                     style = MaterialTheme.typography.titleMedium,
-                    color = PrimaryPurpleLight,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    color = PrimaryBlue,
+                    modifier = Modifier.padding(vertical = 12.dp)
                 )
             }
         },
@@ -790,7 +883,7 @@ fun PasswordGeneratorDialog(
             Button(
                 onClick = { onGenerate(generatedPassword) },
                 enabled = generatedPassword.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("使用密码")
@@ -798,7 +891,7 @@ fun PasswordGeneratorDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", color = Color.White)
+                Text("取消", color = TextSecondary)
             }
         }
     )
@@ -835,14 +928,15 @@ fun CategorySelectionField(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = selectedCategory.name,
-                    fontSize = 14.sp,
-                    color = Color.White,
+                    fontSize = 15.sp,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
             } else {
                 Text(
                     text = "选择分类",
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     color = TextTertiary,
                     modifier = Modifier.weight(1f)
                 )
@@ -852,7 +946,7 @@ fun CategorySelectionField(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(DarkSurface, RoundedCornerShape(16.dp))
+            modifier = Modifier.background(DialogBackground, RoundedCornerShape(16.dp))
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(
@@ -865,7 +959,7 @@ fun CategorySelectionField(
                                     .background(safeBrandColor(category.color))
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(category.name, color = Color.White, fontSize = 14.sp)
+                            Text(category.name, color = TextPrimary, fontSize = 14.sp)
                         }
                     },
                     onClick = {

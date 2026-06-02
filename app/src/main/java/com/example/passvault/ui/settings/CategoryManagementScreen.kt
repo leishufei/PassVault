@@ -16,21 +16,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -39,235 +36,199 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.passvault.data.model.Category
 import com.example.passvault.ui.theme.BrandColors
 import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.DarkSurface
-import com.example.passvault.ui.theme.PrimaryIndigo
-import com.example.passvault.ui.theme.PrimaryPurple
+import com.example.passvault.ui.theme.DialogBackground
+import com.example.passvault.ui.theme.LightSurfaceVariant
+import com.example.passvault.ui.theme.PrimaryBlue
+import com.example.passvault.ui.theme.TextPrimary
 import com.example.passvault.ui.theme.TextSecondary
 import com.example.passvault.ui.theme.TextTertiary
 
 @Composable
 fun CategoryManagementScreen(
-    viewModel: CategoryViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: CategoryViewModel = hiltViewModel()
 ) {
     val categories by viewModel.categories.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    var showDialog by remember { mutableStateOf(false) }
+    var editingCategory by remember { mutableStateOf<Category?>(null) }
+    var newCategoryName by remember { mutableStateOf("") }
+    var selectedColorIndex by remember { mutableStateOf(0) }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
+        // Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(LightSurfaceVariant)
+                    .clickable(onClick = onNavigateBack),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.07f))
-                        .clickable { onNavigateBack() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color(0xFFB0B0CC),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Text(
-                    text = "分类管理",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(PrimaryPurple)
-                        .clickable { showAddDialog = true },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Add",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
             }
 
-            LazyColumn(
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Text(
+                text = "分类管理",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                modifier = Modifier.weight(1f)
+            )
+
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryBlue)
+                    .clickable {
+                        editingCategory = null
+                        newCategoryName = ""
+                        selectedColorIndex = 0
+                        showDialog = true
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                item { Spacer(modifier = Modifier.height(8.dp)) }
-                items(categories) { category ->
-                    CategoryItem(
-                        category = category,
-                        onEdit = {
-                            selectedCategory = category
-                            showEditDialog = true
-                        },
-                        onDelete = {
-                            selectedCategory = category
-                            showDeleteDialog = true
+                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(18.dp))
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            items(categories, key = { it.id }) { category ->
+                CategoryItem(
+                    category = category,
+                    onEdit = {
+                        editingCategory = category
+                        newCategoryName = category.name
+                        selectedColorIndex = category.color
+                        showDialog = true
+                    },
+                    onDelete = {
+                        if (!category.isDefault) {
+                            viewModel.deleteCategory(category.id)
                         }
-                    )
-                }
-                item { Spacer(modifier = Modifier.height(80.dp)) }
+                    }
+                )
             }
+
+            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
     }
 
-    if (showAddDialog) {
-        CategoryEditDialog(
-            title = "添加分类",
-            initialName = "",
-            initialColor = 0,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, color ->
-                viewModel.addCategory(name, color)
-                showAddDialog = false
-            }
-        )
-    }
-
-    if (showEditDialog && selectedCategory != null) {
-        CategoryEditDialog(
-            title = "编辑分类",
-            initialName = selectedCategory!!.name,
-            initialColor = selectedCategory!!.color,
-            onDismiss = { showEditDialog = false },
-            onConfirm = { name, color ->
-                viewModel.updateCategory(selectedCategory!!.id, name, color)
-                showEditDialog = false
-            }
-        )
-    }
-
-    if (showDeleteDialog && selectedCategory != null) {
+    if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            containerColor = DarkSurface,
+            onDismissRequest = { showDialog = false },
+            containerColor = DialogBackground,
             shape = RoundedCornerShape(24.dp),
             title = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFEF4444).copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = null,
-                            tint = Color(0xFFEF4444),
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        "删除 ${selectedCategory!!.name}?",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                }
-            },
-            text = {
                 Text(
-                    if (selectedCategory!!.isDefault)
-                        "预设分类不能删除"
-                    else
-                        "此操作不可撤销，该分类下的密码将移动到\"其他\"分类。",
-                    color = TextSecondary,
-                    fontSize = 14.sp
+                    if (editingCategory == null) "新建分类" else "编辑分类",
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold
                 )
             },
-            confirmButton = {
-                if (!selectedCategory!!.isDefault) {
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    OutlinedTextField(
+                        value = newCategoryName,
+                        onValueChange = { newCategoryName = it },
+                        label = { Text("分类名称", color = TextSecondary) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = LightSurfaceVariant,
+                            unfocusedContainerColor = LightSurfaceVariant,
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = Color.Transparent
+                        )
+                    )
+
+                    Text("选择颜色", color = TextSecondary, fontSize = 14.sp)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        TextButton(
-                            onClick = { showDeleteDialog = false },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                containerColor = Color.White.copy(alpha = 0.08f)
-                            )
-                        ) {
-                            Text("取消", color = Color(0xFFD0D0F0), fontSize = 15.sp)
-                        }
-                        TextButton(
-                            onClick = {
-                                viewModel.deleteCategory(selectedCategory!!.id)
-                                showDeleteDialog = false
-                            },
-                            modifier = Modifier.weight(1f).height(44.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                containerColor = Color(0xFFEF4444)
-                            )
-                        ) {
-                            Text(
-                                "删除",
-                                color = Color.White,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold
+                        for (i in 0 until 5) {
+                            ColorSelector(
+                                colorIndex = i,
+                                isSelected = selectedColorIndex == i,
+                                onClick = { selectedColorIndex = i }
                             )
                         }
                     }
-                } else {
-                    TextButton(
-                        onClick = { showDeleteDialog = false },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.textButtonColors(
-                            containerColor = PrimaryPurple
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("确定", color = Color.White, fontSize = 15.sp)
+                        for (i in 5 until 10) {
+                            val idx = i % BrandColors.size
+                            ColorSelector(
+                                colorIndex = idx,
+                                isSelected = selectedColorIndex == idx,
+                                onClick = { selectedColorIndex = idx }
+                            )
+                        }
                     }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newCategoryName.isNotBlank()) {
+                            val cat = editingCategory
+                            if (cat == null) {
+                                viewModel.addCategory(newCategoryName.trim(), selectedColorIndex)
+                            } else {
+                                viewModel.updateCategory(cat.id, newCategoryName.trim(), selectedColorIndex)
+                            }
+                            showDialog = false
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("保存")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("取消", color = TextSecondary)
                 }
             }
         )
@@ -286,195 +247,79 @@ fun CategoryItem(
             .clip(RoundedCornerShape(16.dp))
             .background(CardBackground)
             .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(safeBrandColor(category.color)),
+                .clip(CircleShape)
+                .background(safeBrandColor(category.color).copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
                     .size(16.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
+                    .background(safeBrandColor(category.color))
             )
         }
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = category.name,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White
-            )
+            Text(category.name, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             if (category.isDefault) {
-                Text(
-                    text = "预设分类",
-                    fontSize = 12.sp,
-                    color = TextTertiary
-                )
+                Text("默认分类", color = TextSecondary, fontSize = 12.sp)
             }
         }
 
-        IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-            Icon(
-                Icons.Default.Edit,
-                contentDescription = "Edit",
-                tint = TextSecondary,
-                modifier = Modifier.size(16.dp)
-            )
-        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(LightSurfaceVariant)
+                    .clickable(onClick = onEdit),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+            }
 
-        if (!category.isDefault) {
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color(0xFFEF4444),
-                    modifier = Modifier.size(16.dp)
-                )
+            if (!category.isDefault) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFEF4444).copy(alpha = 0.1f))
+                        .clickable(onClick = onDelete),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun CategoryEditDialog(
-    title: String,
-    initialName: String,
-    initialColor: Int,
-    onDismiss: () -> Unit,
-    onConfirm: (String, Int) -> Unit
+fun ColorSelector(
+    colorIndex: Int,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
-    var name by remember { mutableStateOf(initialName) }
-    var selectedColor by remember { mutableIntStateOf(initialColor) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = DarkSurface,
-        shape = RoundedCornerShape(24.dp),
-        title = {
-            Text(
-                title,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = if (isSelected) TextPrimary else Color.Transparent,
+                shape = CircleShape
             )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("分类名称", color = TextSecondary) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White.copy(alpha = 0.07f),
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.07f),
-                        focusedBorderColor = PrimaryPurple,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
-
-                Column {
-                    Text(
-                        "选择颜色",
-                        fontSize = 14.sp,
-                        color = TextSecondary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(BrandColors.size) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(BrandColors[index])
-                                    .border(
-                                        width = if (selectedColor == index) 3.dp else 0.dp,
-                                        color = Color.White,
-                                        shape = CircleShape
-                                    )
-                                    .clickable { selectedColor = index },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (selectedColor == index) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f).height(44.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.08f)
-                    )
-                ) {
-                    Text("取消", color = Color(0xFFD0D0F0), fontSize = 15.sp)
-                }
-                Button(
-                    onClick = { onConfirm(name, selectedColor) },
-                    enabled = name.isNotBlank(),
-                    modifier = Modifier.weight(1f).height(44.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        disabledContainerColor = Color.White.copy(alpha = 0.08f)
-                    )
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = if (name.isNotBlank())
-                                    Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo))
-                                else
-                                    Brush.linearGradient(listOf(Color.Transparent, Color.Transparent)),
-                                shape = RoundedCornerShape(16.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            "确定",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (name.isNotBlank()) Color.White else TextTertiary
-                        )
-                    }
-                }
-            }
-        }
+            .padding(4.dp)
+            .clip(CircleShape)
+            .background(safeBrandColor(colorIndex))
+            .clickable(onClick = onClick)
     )
 }
-
-
-
-
-

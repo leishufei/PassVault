@@ -13,15 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -51,13 +48,14 @@ import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.ui.passwords.PasswordViewModel
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.PrimaryIndigo
-import com.example.passvault.ui.theme.PrimaryPurple
-import com.example.passvault.ui.theme.PrimaryPurpleLight
+import com.example.passvault.ui.theme.PrimaryBlue
+import com.example.passvault.ui.theme.PrimaryBlueLight
 import com.example.passvault.ui.theme.SuccessGreen
+import com.example.passvault.ui.theme.TextPrimary
 import com.example.passvault.ui.theme.TextSecondary
 import com.example.passvault.ui.theme.TextTertiary
 import com.example.passvault.ui.theme.WarningYellow
+import com.example.passvault.ui.theme.LightSurfaceVariant
 
 @Composable
 fun GeneratorScreen(
@@ -91,7 +89,7 @@ fun GeneratorScreen(
     val strengthColor = when {
         length > 12 -> SuccessGreen
         length > 8 -> WarningYellow
-        else -> Color.Red
+        else -> Color(0xFFEF4444)
     }
     val strengthPercent = when {
         length > 12 -> 1.0f
@@ -109,7 +107,7 @@ fun GeneratorScreen(
             text = "生成密码",
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = TextPrimary,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         )
 
@@ -124,8 +122,8 @@ fun GeneratorScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White.copy(alpha = 0.05f))
-                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                    .background(CardBackground)
+                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                     .padding(20.dp)
             ) {
                 Row(
@@ -135,29 +133,29 @@ fun GeneratorScreen(
                 ) {
                     Text(
                         text = generatedPassword,
-                        fontSize = 18.sp,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp,
+                        color = TextPrimary,
+                        fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
                         letterSpacing = 0.5.sp,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Strength
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("强度: ", fontSize = 13.sp, color = TextSecondary)
-                    Text(strengthText, fontSize = 13.sp, color = strengthColor, fontWeight = FontWeight.SemiBold)
+                    Text(strengthText, fontSize = 13.sp, color = strengthColor, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Color.White.copy(alpha = 0.1f))
+                        .background(LightSurfaceVariant)
                 ) {
                     Box(
                         modifier = Modifier
@@ -168,7 +166,7 @@ fun GeneratorScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Action buttons
                 Row(
@@ -178,26 +176,26 @@ fun GeneratorScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .height(48.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White.copy(alpha = 0.08f))
+                            .background(LightSurfaceVariant)
                             .clickable {
                                 clipboardManager.setText(AnnotatedString(generatedPassword))
                                 copied = true
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = Color(0xFFD0D0F0), modifier = Modifier.size(16.dp))
-                            Text(if (copied) "已复制" else "复制", color = Color(0xFFD0D0F0), fontSize = 14.sp)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                            Text(if (copied) "已复制" else "复制", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(44.dp)
+                            .height(48.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Brush.linearGradient(listOf(PrimaryPurple, PrimaryIndigo)))
+                            .background(Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)))
                             .clickable {
                                 try {
                                     generatedPassword = viewModel.generatePassword(
@@ -208,9 +206,9 @@ fun GeneratorScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                            Text("重新生成", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Text("重新生成", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -233,44 +231,44 @@ fun GeneratorScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("密码长度", color = Color(0xFFD0D0F0), fontSize = 14.sp)
+                        Text("密码长度", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(PrimaryPurple.copy(alpha = 0.2f))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                .background(LightSurfaceVariant)
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Text(length.toInt().toString(), color = PrimaryPurpleLight, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text(length.toInt().toString(), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Slider(
                         value = length,
                         onValueChange = { length = it },
                         valueRange = 6f..32f,
                         steps = 25,
                         colors = SliderDefaults.colors(
-                            thumbColor = Color.White,
-                            activeTrackColor = PrimaryPurple,
-                            inactiveTrackColor = Color.White.copy(alpha = 0.1f)
+                            thumbColor = PrimaryBlue,
+                            activeTrackColor = PrimaryBlue,
+                            inactiveTrackColor = LightSurfaceVariant
                         )
                     )
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("6", fontSize = 11.sp, color = TextTertiary)
-                        Text("32", fontSize = 11.sp, color = TextTertiary)
+                        Text("6", fontSize = 12.sp, color = TextTertiary)
+                        Text("32", fontSize = 12.sp, color = TextTertiary)
                     }
                 }
 
                 // Divider
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.06f)))
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(LightSurfaceVariant))
 
                 // Toggles
                 SettingSwitch(label = "大写字母 (A-Z)", checked = includeUppercase, onCheckedChange = { includeUppercase = it })
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(Color.White.copy(alpha = 0.06f)))
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(LightSurfaceVariant))
                 SettingSwitch(label = "小写字母 (a-z)", checked = includeLowercase, onCheckedChange = { includeLowercase = it })
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(Color.White.copy(alpha = 0.06f)))
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(LightSurfaceVariant))
                 SettingSwitch(label = "数字 (0-9)", checked = includeNumbers, onCheckedChange = { includeNumbers = it })
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(Color.White.copy(alpha = 0.06f)))
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(LightSurfaceVariant))
                 SettingSwitch(label = "符号 (!@#...)", checked = includeSymbols, onCheckedChange = { includeSymbols = it })
             }
 
@@ -284,19 +282,19 @@ fun SettingSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = Color(0xFFD0D0F0), fontSize = 14.sp)
+        Text(label, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = PrimaryPurple,
+                checkedTrackColor = PrimaryBlue,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.15f)
+                uncheckedTrackColor = Color(0xFFE2E8F0)
             )
         )
     }
