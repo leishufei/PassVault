@@ -8,6 +8,8 @@ import com.example.passvault.data.repository.CategoryRepository
 import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.data.repository.PasswordRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.domain.generator.PasswordGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -88,7 +91,9 @@ class PasswordViewModel @Inject constructor(
             PasswordFilter.RECENT -> filtered.sortedByDescending { it.lastUsedAt }
             is PasswordFilter.CATEGORY -> filtered.filter { it.categoryId == filter.categoryId }
         }
-    }.stateIn(
+    }
+    .distinctUntilChanged()
+    .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyList()
@@ -184,7 +189,8 @@ class PasswordViewModel @Inject constructor(
 
     private fun triggerAutoSync() {
         if (syncManager.currentProvider != null) {
-            viewModelScope.launch {
+            viewModelScope.launch(Dispatchers.IO) {
+                delay(1000)
                 syncManager.performSync()
             }
         }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -199,7 +200,11 @@ fun PasswordListScreen(
                         DropdownMenu(
                             expanded = isCategoryDropdownExpanded,
                             onDismissRequest = { isCategoryDropdownExpanded = false },
-                            modifier = Modifier.background(DialogBackground, RoundedCornerShape(16.dp))
+                            shape = RoundedCornerShape(16.dp),
+                            containerColor = DialogBackground,
+                            tonalElevation = 0.dp,
+                            shadowElevation = 0.dp,
+                            border = null
                         ) {
                             categories.forEach { category ->
                                 val isSelected = filterMode is PasswordFilter.CATEGORY &&
@@ -266,7 +271,8 @@ fun PasswordListScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(passwords, key = { it.id }) { password ->
                         PasswordListItem(
@@ -288,7 +294,6 @@ fun PasswordListScreen(
                             }
                         )
                     }
-                    item { Spacer(modifier = Modifier.height(80.dp)) }
                 }
             }
         }
@@ -416,7 +421,11 @@ fun PasswordListItem(
             DropdownMenu(
                 expanded = showMenu,
                 onDismissRequest = { showMenu = false },
-                modifier = Modifier.background(DialogBackground, RoundedCornerShape(16.dp))
+                shape = RoundedCornerShape(16.dp),
+                containerColor = DialogBackground,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                border = null
             ) {
                 DropdownMenuItem(
                     text = { Text("复制密码", color = TextPrimary, fontSize = 14.sp) },

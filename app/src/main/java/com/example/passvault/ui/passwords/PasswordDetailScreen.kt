@@ -92,6 +92,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.abs
 
 @Composable
@@ -524,16 +525,21 @@ fun PasswordFieldCard(
         label = "glow"
     )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+    val isWeakPassword = password.length <= 8
+    val pulseAlpha = if (isWeakPassword) {
+        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+        infiniteTransition.animateFloat(
+            initialValue = 0.4f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(800, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseAlpha"
+        ).value
+    } else {
+        1f
+    }
 
     LaunchedEffect(showGlow) {
         if (showGlow) {
@@ -646,7 +652,9 @@ fun PasswordFieldCard(
 
 @Composable
 fun TimestampCard(createdAt: Long, updatedAt: Long) {
-    val sdf = SimpleDateFormat("yyyy年MM月dd日 HH:mm", Locale.getDefault())
+    val sdf = SimpleDateFormat("yyyy年MM月dd日 HH:mm", Locale.getDefault()).apply {
+        timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -946,7 +954,11 @@ fun CategorySelectionField(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.background(DialogBackground, RoundedCornerShape(16.dp))
+            shape = RoundedCornerShape(16.dp),
+            containerColor = DialogBackground,
+            tonalElevation = 0.dp,
+            shadowElevation = 0.dp,
+            border = null
         ) {
             categories.forEach { category ->
                 DropdownMenuItem(

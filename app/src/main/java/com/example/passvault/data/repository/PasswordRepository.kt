@@ -127,13 +127,19 @@ class PasswordRepository @Inject constructor(
         passwordDao.logicalDelete(id, System.currentTimeMillis())
     }
 
-    suspend fun syncMergedPasswords(mergedItems: List<com.example.passvault.domain.sync.SyncManager.PasswordSyncItem>) {
+    suspend fun syncMergedPasswords(
+        mergedItems: List<com.example.passvault.domain.sync.SyncManager.PasswordSyncItem>,
+        categoryNameToId: Map<String, Long>
+    ) {
         val currentLocal = passwordDao.getAllPasswordsForAnalysis()
-        val localMap = currentLocal.associateBy { "${it.categoryId}::${it.title}::${it.username}" }
+        val localMap = currentLocal.associateBy { "${it.title}::${it.username}" }
 
         mergedItems.forEach { syncItem ->
-            val existing = localMap["${syncItem.categoryId}::${syncItem.title}::${syncItem.username}"]
+            val existing = localMap["${syncItem.title}::${syncItem.username}"]
             val encryptedData = cryptoManager.encrypt(syncItem.password)
+            val categoryId = categoryNameToId[syncItem.categoryName] ?: 0L
+            val strength = calculatePasswordStrength(syncItem.password)
+
             val entry = PasswordEntry(
                 id = existing?.id ?: 0L,
                 title = syncItem.title,
@@ -144,8 +150,8 @@ class PasswordRepository @Inject constructor(
                 notes = syncItem.notes,
                 isFavorite = syncItem.isFavorite,
                 iconColor = syncItem.iconColor,
-                strength = syncItem.strength,
-                categoryId = syncItem.categoryId,
+                strength = strength,
+                categoryId = categoryId,
                 createdAt = syncItem.createdAt,
                 updatedAt = syncItem.updatedAt,
                 isDeleted = syncItem.isDeleted

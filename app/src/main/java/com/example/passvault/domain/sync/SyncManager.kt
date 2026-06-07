@@ -1,6 +1,7 @@
 package com.example.passvault.domain.sync
 
 import com.example.passvault.BuildConfig
+import com.example.passvault.data.repository.CategoryRepository
 import com.example.passvault.data.repository.PasswordImportData
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.data.security.CloudBackupFormat
@@ -14,6 +15,7 @@ import javax.inject.Singleton
 @Singleton
 class SyncManager @Inject constructor(
     private val passwordRepository: PasswordRepository,
+    private val categoryRepository: CategoryRepository,
     private val cloudCryptoManager: CloudCryptoManager,
     private val sessionManager: SessionManager
 ) {
@@ -31,10 +33,9 @@ class SyncManager @Inject constructor(
         val password: String,
         val website: String,
         val notes: String,
-        val categoryId: Long,
+        val categoryName: String,
         val isFavorite: Boolean,
         val iconColor: Int,
-        val strength: Int,
         val createdAt: Long,
         val updatedAt: Long,
         val isDeleted: Boolean
@@ -47,25 +48,29 @@ class SyncManager @Inject constructor(
             ?: return Result.failure(Exception("Session is locked"))
 
         return try {
+            // Get all categories for mapping
+            val categories = categoryRepository.getAllCategories().first()
+            val categoryIdToName = categories.associate { it.id to it.name }
+            val categoryNameToId = categories.associate { it.name to it.id }
+
             // 1. Get Local Items
             val localEntries = passwordRepository.getAllPasswordsForSync().first()
-            val localItems = localEntries.map { 
+            val localItems = localEntries.map {
                 PasswordSyncItem(
                     title = it.title,
                     username = it.username,
                     password = it.password,
                     website = it.website,
                     notes = it.notes,
-                    categoryId = it.categoryId,
+                    categoryName = categoryIdToName[it.categoryId] ?: "未分类",
                     isFavorite = it.isFavorite,
                     iconColor = it.iconColor,
-                    strength = it.strength,
                     createdAt = it.createdAt,
                     updatedAt = it.updatedAt,
                     isDeleted = it.isDeleted
                 )
             }
-            val localMap = localItems.associateBy { "${it.categoryId}::${it.title}::${it.username}" }
+            val localMap = localItems.associateBy { "${it.categoryName}::${it.title}::${it.username}" }
 
             // 2. Download Cloud Items
             val cloudItems = try {
@@ -77,13 +82,13 @@ class SyncManager @Inject constructor(
             } catch (e: Exception) {
                 emptyList<PasswordSyncItem>()
             }
-            val cloudMap = cloudItems.associateBy { "${it.categoryId}::${it.title}::${it.username}" }
+            val cloudMap = cloudItems.associateBy { "${it.categoryName}::${it.title}::${it.username}" }
 
             // 3. Two-Way Merge
             val mergedMap = mutableMapOf<String, PasswordSyncItem>()
 
             cloudItems.forEach { cloudItem ->
-                val key = "${cloudItem.categoryId}::${cloudItem.title}::${cloudItem.username}"
+                val key = "${cloudItem.categoryName}::${cloudItem.title}::${cloudItem.username}"
                 val localItem = localMap[key]
                 if (localItem == null) {
                     mergedMap[key] = cloudItem // New from cloud
@@ -98,7 +103,7 @@ class SyncManager @Inject constructor(
             }
 
             localItems.forEach { localItem ->
-                val key = "${localItem.categoryId}::${localItem.title}::${localItem.username}"
+                val key = "${localItem.categoryName}::${localItem.title}::${localItem.username}"
                 if (!cloudMap.containsKey(key)) {
                     mergedMap[key] = localItem // New from local
                 }
@@ -107,7 +112,7 @@ class SyncManager @Inject constructor(
             val mergedItems = mergedMap.values.toList()
 
             // 4. Update Local Database
-            passwordRepository.syncMergedPasswords(mergedItems)
+            passwordRepository.syncMergedPasswords(mergedItems, categoryNameToId)
 
             // 5. Encrypt and Upload Merged Data
             val payloadJson = gson.toJson(SyncPayload(mergedItems))

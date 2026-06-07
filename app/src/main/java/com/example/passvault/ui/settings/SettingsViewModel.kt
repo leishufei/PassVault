@@ -16,6 +16,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -238,7 +239,9 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSyncing = true, lastSyncMessage = "正在同步中...")
-            val result = syncManager.performSync()
+            val result = withContext(Dispatchers.IO) {
+                syncManager.performSync()
+            }
             _uiState.value = _uiState.value.copy(
                 isSyncing = false,
                 lastSyncMessage = if (result.isSuccess) "同步成功" else "同步失败: ${result.exceptionOrNull()?.message}"
