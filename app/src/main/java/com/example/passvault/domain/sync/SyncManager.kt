@@ -23,8 +23,15 @@ class SyncManager @Inject constructor(
     
     var currentProvider: CloudStorageProvider? = null
 
+    data class CategorySyncItem(
+        val name: String,
+        val color: Int,
+        val sortOrder: Int
+    )
+
     data class SyncPayload(
-        val passwords: List<PasswordSyncItem>
+        val passwords: List<PasswordSyncItem>,
+        val categories: List<CategorySyncItem>? = null
     )
 
     data class PasswordSyncItem(
@@ -48,12 +55,10 @@ class SyncManager @Inject constructor(
             ?: return Result.failure(Exception("Session is locked"))
 
         return try {
-            // Get all categories for mapping
-            val categories = categoryRepository.getAllCategories().first()
-            val categoryIdToName = categories.associate { it.id to it.name }
-            val categoryNameToId = categories.associate { it.name to it.id }
+            val localCategories = categoryRepository.getAllCategories().first()
+            val categoryIdToName = localCategories.associate { it.id to it.name }
 
-            // 1. Get Local Items
+            // 1. Build local password items
             val localEntries = passwordRepository.getAllPasswordsForSync().first()
             val localItems = localEntries.map {
                 PasswordSyncItem(
@@ -72,50 +77,81 @@ class SyncManager @Inject constructor(
             }
             val localMap = localItems.associateBy { "${it.categoryName}::${it.title}::${it.username}" }
 
-            // 2. Download Cloud Items
-            val cloudItems = try {
+            // 2. Download cloud payload
+            val cloudPayload = try {
                 val fileData = provider.downloadBackup(remoteFileName).getOrThrow()
                 val backupJson = String(fileData, Charsets.UTF_8)
                 val backupFormat = gson.fromJson(backupJson, CloudBackupFormat::class.java)
                 val payloadJson = cloudCryptoManager.decryptFromCloud(backupFormat, masterPassword)
-                gson.fromJson(payloadJson, SyncPayload::class.java).passwords
+                gson.fromJson(payloadJson, SyncPayload::class.java)
             } catch (e: Exception) {
-                emptyList<PasswordSyncItem>()
+                null
             }
-            val cloudMap = cloudItems.associateBy { "${it.categoryName}::${it.title}::${it.username}" }
+            val cloudItems = cloudPayload?.passwords ?: emptyList()
+            val cloudCategories = cloudPayload?.categories ?: emptyList()
 
-            // 3. Two-Way Merge
+            // 3. Merge categories — create any that are missing locally
+            val localCategoryNames = localCategories.map { it.name }.toMutableSet()
+            val categoryNamesToCreate = mutableListOf<CategorySyncItem>()
+
+            cloudCategories.forEach { cloudCat ->
+                if (cloudCat.name !in localCategoryNames && cloudCat.name != "未分类") {
+                    categoryNamesToCreate.add(cloudCat)
+                    localCategoryNames.add(cloudCat.name)
+                }
+            }
+
+            // Fallback for old-format files without categories field
+            if (cloudCategories.isEmpty()) {
+                cloudItems.map { it.categoryName }.distinct().forEach { name ->
+                    if (name != "未分类" && name !in localCategoryNames) {
+                        categoryNamesToCreate.add(CategorySyncItem(name, (0..5).random(), 0))
+                        localCategoryNames.add(name)
+                    }
+                }
+            }
+
+            categoryNamesToCreate.forEach { cat ->
+                categoryRepository.insertCategory(cat.name, cat.color, cat.sortOrder)
+            }
+
+            // Rebuild mapping after inserts
+            val updatedCategories = categoryRepository.getAllCategories().first()
+            val categoryNameToId = updatedCategories.associate { it.name to it.id }
+
+            // 4. Two-way merge passwords
+            val cloudMap = cloudItems.associateBy { "${it.categoryName}::${it.title}::${it.username}" }
             val mergedMap = mutableMapOf<String, PasswordSyncItem>()
 
             cloudItems.forEach { cloudItem ->
                 val key = "${cloudItem.categoryName}::${cloudItem.title}::${cloudItem.username}"
                 val localItem = localMap[key]
                 if (localItem == null) {
-                    mergedMap[key] = cloudItem // New from cloud
+                    mergedMap[key] = cloudItem
                 } else {
-                    // Conflict resolution by updatedAt
-                    if (cloudItem.updatedAt > localItem.updatedAt) {
-                        mergedMap[key] = cloudItem
-                    } else {
-                        mergedMap[key] = localItem
-                    }
+                    mergedMap[key] = if (cloudItem.updatedAt > localItem.updatedAt) cloudItem else localItem
                 }
             }
 
             localItems.forEach { localItem ->
                 val key = "${localItem.categoryName}::${localItem.title}::${localItem.username}"
                 if (!cloudMap.containsKey(key)) {
-                    mergedMap[key] = localItem // New from local
+                    mergedMap[key] = localItem
                 }
             }
 
             val mergedItems = mergedMap.values.toList()
 
-            // 4. Update Local Database
+            // 5. Update local database
             passwordRepository.syncMergedPasswords(mergedItems, categoryNameToId)
 
-            // 5. Encrypt and Upload Merged Data
-            val payloadJson = gson.toJson(SyncPayload(mergedItems))
+            // 6. Build merged category list for upload
+            val mergedCategoryItems = updatedCategories.map {
+                CategorySyncItem(name = it.name, color = it.color, sortOrder = it.sortOrder)
+            }
+
+            // 7. Encrypt and upload
+            val payloadJson = gson.toJson(SyncPayload(mergedItems, mergedCategoryItems))
             val backupFormat = cloudCryptoManager.encryptForCloud(payloadJson, masterPassword)
             val backupJson = gson.toJson(backupFormat)
             provider.uploadBackup(backupJson.toByteArray(Charsets.UTF_8), remoteFileName)
