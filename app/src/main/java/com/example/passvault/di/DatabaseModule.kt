@@ -26,7 +26,7 @@ object DatabaseModule {
             PasswordDatabase::class.java,
             "password_database"
         )
-            .fallbackToDestructiveMigration()
+            .addMigrations(PasswordDatabase.MIGRATION_4_5)
             .build()
     }
 

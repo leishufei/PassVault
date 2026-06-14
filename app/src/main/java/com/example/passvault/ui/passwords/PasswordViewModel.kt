@@ -38,7 +38,7 @@ class PasswordViewModel @Inject constructor(
     private val repository: PasswordRepository,
     private val categoryRepository: CategoryRepository,
     private val passwordGenerator: PasswordGenerator,
-    private val syncManager: com.example.passvault.domain.sync.SyncManager
+    private val syncScheduler: com.example.passvault.domain.sync.SyncScheduler
 ) : ViewModel() {
 
     private val prefs = context.getSharedPreferences("passvault_filter", Context.MODE_PRIVATE)
@@ -188,16 +188,18 @@ class PasswordViewModel @Inject constructor(
     }
 
     private fun triggerAutoSync() {
-        if (syncManager.currentProvider != null) {
-            viewModelScope.launch(Dispatchers.IO) {
-                delay(1000)
-                syncManager.performSync()
-            }
-        }
+        syncScheduler.markDirty()
     }
 
     fun generatePassword(config: PasswordConfig): String {
         return passwordGenerator.generatePassword(config)
+    }
+
+    fun addCategory(name: String, colorIndex: Int) {
+        viewModelScope.launch {
+            val sortOrder = categories.value.size
+            categoryRepository.insertCategory(name, colorIndex, sortOrder)
+        }
     }
 
     companion object {

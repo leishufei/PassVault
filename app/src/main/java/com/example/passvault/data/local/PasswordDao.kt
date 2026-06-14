@@ -18,6 +18,9 @@ interface PasswordDao {
     @Query("SELECT * FROM password_entries WHERE id = :id")
     suspend fun getPasswordById(id: Long): PasswordEntry?
 
+    @Query("SELECT * FROM password_entries WHERE uuid = :uuid")
+    suspend fun getPasswordByUuid(uuid: String): PasswordEntry?
+
     @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND (title LIKE '%' || :query || '%' OR username LIKE '%' || :query || '%' OR website LIKE '%' || :query || '%')")
     fun searchPasswords(query: String): Flow<List<PasswordEntry>>
 
@@ -48,6 +51,9 @@ interface PasswordDao {
     @Query("SELECT * FROM password_entries")
     fun getAllPasswordsForSync(): Flow<List<PasswordEntry>>
 
+    @Query("SELECT * FROM password_entries")
+    suspend fun getAllPasswordsIncludingDeleted(): List<PasswordEntry>
+
     @Query("SELECT * FROM password_entries WHERE isDeleted = 0")
     suspend fun getAllPasswordsForAnalysis(): List<PasswordEntry>
 
@@ -56,4 +62,7 @@ interface PasswordDao {
 
     @Query("UPDATE password_entries SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun updatePasswordsCategory(oldCategoryId: Long, newCategoryId: Long)
+
+    @Query("DELETE FROM password_entries WHERE isDeleted = 1 AND updatedAt < :cutoff")
+    suspend fun deleteOldTombstones(cutoff: Long)
 }

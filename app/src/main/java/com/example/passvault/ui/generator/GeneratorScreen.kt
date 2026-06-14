@@ -108,7 +108,7 @@ fun GeneratorScreen(
             fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
         )
 
         Column(
@@ -124,7 +124,7 @@ fun GeneratorScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(CardBackground)
                     .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
-                    .padding(20.dp)
+                    .padding(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -166,7 +166,7 @@ fun GeneratorScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Action buttons
                 Row(
@@ -176,7 +176,7 @@ fun GeneratorScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(44.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(LightSurfaceVariant)
                             .clickable {
@@ -193,7 +193,7 @@ fun GeneratorScreen(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(44.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)))
                             .clickable {
@@ -214,7 +214,7 @@ fun GeneratorScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Options card
             Column(
@@ -225,7 +225,7 @@ fun GeneratorScreen(
                     .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             ) {
                 // Length slider
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -241,7 +241,7 @@ fun GeneratorScreen(
                             Text(length.toInt().toString(), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Slider(
                         value = length,
                         onValueChange = { length = it },
@@ -272,7 +272,7 @@ fun GeneratorScreen(
                 SettingSwitch(label = "符号 (!@#...)", checked = includeSymbols, onCheckedChange = { includeSymbols = it })
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -282,7 +282,7 @@ fun SettingSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

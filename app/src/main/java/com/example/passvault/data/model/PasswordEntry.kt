@@ -2,11 +2,13 @@ package com.example.passvault.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.util.UUID
 
 @Entity(tableName = "password_entries")
 data class PasswordEntry(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+    val uuid: String = UUID.randomUUID().toString(),
     val title: String,
     val username: String,
     val encryptedPassword: ByteArray,

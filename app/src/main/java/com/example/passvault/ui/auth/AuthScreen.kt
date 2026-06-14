@@ -211,7 +211,8 @@ fun LoginScreen(
     onBiometricClick: () -> Unit,
     isBiometricAvailable: Boolean,
     isBiometricEnabled: Boolean,
-    error: String?
+    error: String?,
+    syncStatus: SyncStatus = SyncStatus.Idle
 ) {
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -253,6 +254,38 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall
             )
+        }
+
+        // Sync status indicator
+        when (syncStatus) {
+            SyncStatus.Syncing -> {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "正在同步...",
+                    color = PrimaryBlue,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            SyncStatus.Success -> {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "同步成功",
+                    color = Color(0xFF10B981),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            SyncStatus.Error -> {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "同步失败",
+                    color = Color(0xFFEF4444),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            SyncStatus.Idle -> { /* No sync status to show */ }
         }
 
         Spacer(modifier = Modifier.height(24.dp))

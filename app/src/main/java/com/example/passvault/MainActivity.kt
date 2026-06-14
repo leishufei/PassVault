@@ -114,7 +114,8 @@ fun PassVaultAppContent() {
                 },
                 isBiometricAvailable = authState.isBiometricAvailable,
                 isBiometricEnabled = authState.isBiometricEnabled,
-                error = authState.error
+                error = authState.error,
+                syncStatus = authState.syncStatus
             )
         }
 

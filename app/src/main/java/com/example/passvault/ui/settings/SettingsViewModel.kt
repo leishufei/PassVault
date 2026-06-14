@@ -31,6 +31,7 @@ class SettingsViewModel @Inject constructor(
     private val masterPasswordManager: MasterPasswordManager,
     private val categoryRepository: CategoryRepository,
     private val syncManager: com.example.passvault.domain.sync.SyncManager,
+    private val syncScheduler: com.example.passvault.domain.sync.SyncScheduler,
     private val googleDriveProvider: com.example.passvault.data.sync.GoogleDriveProvider
 ) : ViewModel() {
 
@@ -240,7 +241,7 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSyncing = true, lastSyncMessage = "正在同步中...")
             val result = withContext(Dispatchers.IO) {
-                syncManager.performSync()
+                syncScheduler.syncImmediately()
             }
             _uiState.value = _uiState.value.copy(
                 isSyncing = false,

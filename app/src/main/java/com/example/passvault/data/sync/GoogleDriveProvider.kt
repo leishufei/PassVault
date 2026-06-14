@@ -135,6 +135,73 @@ class GoogleDriveProvider @Inject constructor(
         return result.files?.firstOrNull()?.id
     }
 
+    override suspend fun downloadBackupWithVersion(
+        remoteFileName: String
+    ): Result<Pair<ByteArray, String>> = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val folderId = getOrCreateFolder(drive)
+            val fileId = findFileId(drive, remoteFileName, folderId)
+                ?: return@withContext Result.failure(Exception("Backup file not found on Drive"))
+
+            // 获取文件元数据（含 modifiedTime 作为版本标识）
+            val fileMeta = drive.files().get(fileId)
+                .setFields("id, modifiedTime")
+                .execute()
+            val version = fileMeta.modifiedTime.toStringRfc3339()
+
+            val outputStream = java.io.ByteArrayOutputStream()
+            drive.files().get(fileId).executeMediaAndDownloadTo(outputStream)
+            Result.success(Pair(outputStream.toByteArray(), version))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun uploadBackupIfMatch(
+        fileData: ByteArray,
+        remoteFileName: String,
+        expectedVersion: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val folderId = getOrCreateFolder(drive)
+            val fileId = findFileId(drive, remoteFileName, folderId)
+
+            if (fileId != null) {
+                // 检查当前版本是否和下载时一致
+                val currentMeta = drive.files().get(fileId)
+                    .setFields("modifiedTime")
+                    .execute()
+                val currentVersion = currentMeta.modifiedTime.toStringRfc3339()
+
+                if (currentVersion != expectedVersion) {
+                    return@withContext Result.failure(
+                        java.util.ConcurrentModificationException(
+                            "云端文件已被其他设备修改 (expected=$expectedVersion, actual=$currentVersion)"
+                        )
+                    )
+                }
+                // 版本一致，安全更新
+                val content = ByteArrayContent("application/json", fileData)
+                drive.files().update(fileId, null, content).execute()
+            } else {
+                // 首次创建，无冲突风险
+                val fileMetadata = com.google.api.services.drive.model.File().apply {
+                    name = remoteFileName
+                    parents = listOf(folderId)
+                }
+                val content = ByteArrayContent("application/json", fileData)
+                drive.files().create(fileMetadata, content)
+                    .setFields("id")
+                    .execute()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun getOrCreateFolder(drive: Drive): String {
         // 查找已有的 PassVault 文件夹
         val result = drive.files().list()

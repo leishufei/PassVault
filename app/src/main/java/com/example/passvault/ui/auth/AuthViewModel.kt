@@ -14,7 +14,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authManager: AuthManager,
-    private val syncManager: com.example.passvault.domain.sync.SyncManager
+    private val syncScheduler: com.example.passvault.domain.sync.SyncScheduler
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -87,9 +87,19 @@ class AuthViewModel @Inject constructor(
     }
 
     private fun triggerAutoSync() {
-        if (syncManager.currentProvider != null) {
-            viewModelScope.launch {
-                syncManager.performSync()
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(syncStatus = SyncStatus.Syncing)
+                val result = syncScheduler.syncImmediately()
+                _uiState.value = _uiState.value.copy(
+                    syncStatus = if (result.isSuccess) SyncStatus.Success else SyncStatus.Error
+                )
+                kotlinx.coroutines.delay(2000)
+                _uiState.value = _uiState.value.copy(syncStatus = SyncStatus.Idle)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(syncStatus = SyncStatus.Error)
+                kotlinx.coroutines.delay(3000)
+                _uiState.value = _uiState.value.copy(syncStatus = SyncStatus.Idle)
             }
         }
     }
@@ -126,5 +136,13 @@ data class AuthUiState(
     val isAuthenticated: Boolean = false,
     val isBiometricAvailable: Boolean = false,
     val isBiometricEnabled: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val syncStatus: SyncStatus = SyncStatus.Idle
 )
+
+enum class SyncStatus {
+    Idle,
+    Syncing,
+    Success,
+    Error
+}

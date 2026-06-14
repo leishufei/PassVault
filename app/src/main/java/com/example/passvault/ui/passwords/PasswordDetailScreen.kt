@@ -44,12 +44,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -64,10 +71,13 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,6 +88,7 @@ import com.example.passvault.ui.theme.safeBrandColor
 import com.example.passvault.ui.theme.CardBackground
 import com.example.passvault.ui.theme.CardBorder
 import com.example.passvault.ui.theme.DialogBackground
+import com.example.passvault.ui.theme.DividerColor
 import com.example.passvault.ui.theme.LightSurfaceVariant
 import com.example.passvault.ui.theme.PrimaryBlue
 import com.example.passvault.ui.theme.PrimaryBlueLight
@@ -95,6 +106,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.abs
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PasswordDetailScreen(
     passwordId: Long?,
@@ -204,8 +216,8 @@ fun PasswordDetailScreen(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(if (title.isNotEmpty() && password.isNotEmpty()) PrimaryBlue else LightSurfaceVariant)
-                            .clickable(enabled = title.isNotEmpty() && password.isNotEmpty()) {
+                            .background(if (title.isNotEmpty() && (username.isNotEmpty() || password.isNotEmpty())) PrimaryBlue else LightSurfaceVariant)
+                            .clickable(enabled = title.isNotEmpty() && (username.isNotEmpty() || password.isNotEmpty())) {
                                 if (isNewPassword) {
                                     viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0, categoryId)
                                     onPasswordSaved()
@@ -216,7 +228,7 @@ fun PasswordDetailScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Check, contentDescription = "Save", tint = if (title.isNotEmpty() && password.isNotEmpty()) Color.White else TextTertiary, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Check, contentDescription = "Save", tint = if (title.isNotEmpty() && (username.isNotEmpty() || password.isNotEmpty())) Color.White else TextTertiary, modifier = Modifier.size(18.dp))
                     }
                 }
                 if (!isNewPassword) {
@@ -257,7 +269,7 @@ fun PasswordDetailScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (title.isNotEmpty()) {
-                    Text(title.take(1).uppercase(), color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Text(title.take(1).uppercase(), style = MaterialTheme.typography.displayLarge, color = Color.White)
                 } else {
                     Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(32.dp))
                 }
@@ -265,7 +277,7 @@ fun PasswordDetailScreen(
 
             if (!isEditing && title.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(title, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                Text(title, style = MaterialTheme.typography.headlineMedium, color = TextPrimary)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -283,35 +295,38 @@ fun PasswordDetailScreen(
                     passwordVisible = passwordVisible,
                     onPasswordVisibilityChange = { passwordVisible = !passwordVisible },
                     onGenerateClick = { showGeneratorDialog = true },
-                    isNewPassword = isNewPassword
+                    isNewPassword = isNewPassword,
+                    onAddCategory = { name, color -> viewModel.addCategory(name, color) }
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        if (isNewPassword) {
-                            viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0, categoryId)
-                            onPasswordSaved()
-                        } else {
-                            viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0, categoryId)
-                            isEditing = false
-                        }
-                    },
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    enabled = title.isNotEmpty() && password.isNotEmpty()
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .then(
+                            if (title.isNotEmpty() && (username.isNotEmpty() || password.isNotEmpty()))
+                                Modifier.background(Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)), RoundedCornerShape(16.dp))
+                            else
+                                Modifier.background(LightSurfaceVariant, RoundedCornerShape(16.dp))
+                        )
+                        .clickable(enabled = title.isNotEmpty() && (username.isNotEmpty() || password.isNotEmpty())) {
+                            if (isNewPassword) {
+                                viewModel.savePassword(null, title, username, password, website, notes, iconColor, 0, categoryId)
+                                onPasswordSaved()
+                            } else {
+                                viewModel.savePassword(passwordId, title, username, password, website, notes, iconColor, 0, categoryId)
+                                isEditing = false
+                            }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)), RoundedCornerShape(16.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(if (isNewPassword) "添加密码" else "保存更改", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                    }
+                    Text(
+                        if (isNewPassword) "添加密码" else "保存更改",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (title.isNotEmpty() && (username.isNotEmpty() || password.isNotEmpty())) Color.White else TextTertiary
+                    )
                 }
             } else {
                 // View mode - field cards
@@ -394,11 +409,11 @@ fun PasswordDetailScreen(
                         Icon(Icons.Default.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(28.dp))
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text("删除 $title?", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("删除 $title?", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
                 }
             },
             text = {
-                Text("此操作不可撤销，密码将被永久删除。", color = TextSecondary, fontSize = 14.sp)
+                Text("此操作不可撤销，密码将被永久删除。", style = MaterialTheme.typography.bodyMedium, color = TextSecondary)
             },
             confirmButton = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -409,7 +424,7 @@ fun PasswordDetailScreen(
                             .height(44.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.textButtonColors(containerColor = LightSurfaceVariant)
-                    ) { Text("取消", color = TextSecondary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
+                    ) { Text("取消", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = TextSecondary) }
                     TextButton(
                         onClick = {
                             passwordId?.let { viewModel.deletePassword(it) }
@@ -421,7 +436,7 @@ fun PasswordDetailScreen(
                             .height(44.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.textButtonColors(containerColor = Color(0xFFEF4444))
-                    ) { Text("删除", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold) }
+                    ) { Text("删除", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = Color.White) }
                 }
             }
         )
@@ -560,11 +575,11 @@ fun PasswordFieldCard(
         Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = if (visible) password else "••••••••••••••",
+                text = if (password.isEmpty()) "" else if (visible) password else "••••••••",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
                 color = TextPrimary,
-                letterSpacing = if (visible) 0.sp else 3.sp,
+                letterSpacing = if (password.isEmpty() || visible) 0.sp else 2.sp,
                 modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onVisibilityToggle, modifier = Modifier.size(32.dp)) {
@@ -605,47 +620,49 @@ fun PasswordFieldCard(
             }
         }
 
-        // Strength bar
-        Spacer(modifier = Modifier.height(16.dp))
-        val isWeak = password.length <= 8
-        val strengthText = when {
-            password.length > 12 -> "很强"
-            password.length > 8 -> "中等"
-            else -> "较弱"
-        }
-        val strengthColor = when {
-            password.length > 12 -> SuccessGreen
-            password.length > 8 -> WarningYellow
-            else -> AlertPulseRed.copy(alpha = pulseAlpha) // Pulse animation for weak password
-        }
-        val strengthPercent = when {
-            password.length > 12 -> 1.0f
-            password.length > 8 -> 0.6f
-            else -> 0.3f
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("强度:", fontSize = 12.sp, color = TextSecondary)
-            Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(LightSurfaceVariant)
-        ) {
+        if (password.isNotEmpty()) {
+            // Strength bar
+            Spacer(modifier = Modifier.height(16.dp))
+            val isWeak = password.length <= 8
+            val strengthText = when {
+                password.length > 12 -> "很强"
+                password.length > 8 -> "中等"
+                else -> "较弱"
+            }
+            val strengthColor = when {
+                password.length > 12 -> SuccessGreen
+                password.length > 8 -> WarningYellow
+                else -> AlertPulseRed.copy(alpha = pulseAlpha) // Pulse animation for weak password
+            }
+            val strengthPercent = when {
+                password.length > 12 -> 1.0f
+                password.length > 8 -> 0.6f
+                else -> 0.3f
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("强度:", fontSize = 12.sp, color = TextSecondary)
+                Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(strengthPercent)
+                    .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp))
-                    .background(strengthColor)
-            )
+                    .background(LightSurfaceVariant)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(strengthPercent)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(strengthColor)
+                )
+            }
         }
     }
 }
@@ -687,7 +704,8 @@ fun EditableFields(
     passwordVisible: Boolean,
     onPasswordVisibilityChange: () -> Unit,
     onGenerateClick: () -> Unit,
-    isNewPassword: Boolean
+    isNewPassword: Boolean,
+    onAddCategory: (String, Int) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         DetailTextField(
@@ -701,7 +719,8 @@ fun EditableFields(
         CategorySelectionField(
             selectedCategoryId = categoryId,
             categories = categories,
-            onCategorySelected = onCategoryChange
+            onCategorySelected = onCategoryChange,
+            onAddCategory = onAddCategory
         )
 
         DetailTextField(value = username, onValueChange = onUsernameChange, label = "用户名", placeholder = "例如: user@gmail.com")
@@ -715,7 +734,7 @@ fun EditableFields(
                 .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
-            Text("密码", fontSize = 12.sp, color = TextSecondary)
+            Text("密码", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
             Spacer(modifier = Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.weight(1f)) {
@@ -723,16 +742,12 @@ fun EditableFields(
                         value = password,
                         onValueChange = onPasswordChange,
                         modifier = Modifier.fillMaxWidth(),
-                        textStyle = TextStyle(
-                            color = TextPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else LimitedPasswordVisualTransformation(),
                         singleLine = true,
                         decorationBox = { innerTextField ->
                             if (password.isEmpty()) {
-                                Text("输入或生成密码", color = TextTertiary, fontSize = 15.sp)
+                                Text("输入或生成密码", style = MaterialTheme.typography.titleSmall, color = TextTertiary)
                             }
                             innerTextField()
                         }
@@ -745,7 +760,7 @@ fun EditableFields(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
@@ -753,11 +768,11 @@ fun EditableFields(
                     .clickable { onGenerateClick() }
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Text("生成强密码", color = PrimaryBlue, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text("生成强密码", style = MaterialTheme.typography.labelLarge, color = PrimaryBlue)
             }
 
             if (password.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 val isWeak = password.length <= 8
                 val strengthText = when {
                     password.length > 12 -> "很强"
@@ -775,10 +790,10 @@ fun EditableFields(
                     else -> 0.3f
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("强度:", fontSize = 12.sp, color = TextSecondary)
-                    Text(strengthText, fontSize = 12.sp, color = strengthColor, fontWeight = FontWeight.Bold)
+                    Text("强度:", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                    Text(strengthText, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = strengthColor)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Box(
                     modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(LightSurfaceVariant)
                 ) {
@@ -810,7 +825,7 @@ fun DetailTextField(
             .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
-        Text(label, fontSize = 12.sp, color = TextSecondary)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = TextSecondary)
         Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f)) {
@@ -818,16 +833,12 @@ fun DetailTextField(
                     value = value,
                     onValueChange = onValueChange,
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = TextStyle(
-                        color = TextPrimary,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium
-                    ),
+                    textStyle = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
                     singleLine = singleLine,
                     readOnly = readOnly,
                     decorationBox = { innerTextField ->
                         if (value.isEmpty()) {
-                            Text(placeholder, color = TextTertiary, fontSize = 15.sp)
+                            Text(placeholder, style = MaterialTheme.typography.titleSmall, color = TextTertiary)
                         }
                         innerTextField()
                     }
@@ -855,7 +866,7 @@ fun PasswordGeneratorDialog(
     onGenerate: (String) -> Unit,
     viewModel: PasswordViewModel
 ) {
-    var length by remember { mutableStateOf(16) }
+    var length by remember { mutableStateOf(16f) }
     var includeUppercase by remember { mutableStateOf(true) }
     var includeLowercase by remember { mutableStateOf(true) }
     var includeNumbers by remember { mutableStateOf(true) }
@@ -865,53 +876,146 @@ fun PasswordGeneratorDialog(
     LaunchedEffect(length, includeUppercase, includeLowercase, includeNumbers, includeSymbols) {
         try {
             generatedPassword = viewModel.generatePassword(
-                PasswordConfig(length, includeUppercase, includeLowercase, includeNumbers, includeSymbols)
+                PasswordConfig(length.toInt(), includeUppercase, includeLowercase, includeNumbers, includeSymbols)
             )
         } catch (e: Exception) {
             generatedPassword = ""
         }
     }
 
+    val strengthText = when {
+        length > 12 -> "很强"
+        length > 8 -> "中等"
+        else -> "较弱"
+    }
+    val strengthColor = when {
+        length > 12 -> SuccessGreen
+        length > 8 -> WarningYellow
+        else -> AlertPulseRed
+    }
+    val strengthPercent = when {
+        length > 12 -> 1.0f
+        length > 8 -> 0.6f
+        else -> 0.3f
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DialogBackground,
         shape = RoundedCornerShape(24.dp),
-        title = { Text("生成强密码", color = TextPrimary, fontWeight = FontWeight.Bold) },
+        title = { Text("生成强密码", style = MaterialTheme.typography.titleLarge, color = TextPrimary) },
         text = {
             Column {
+                // Generated password display
                 Text(
                     text = generatedPassword,
                     style = MaterialTheme.typography.titleMedium,
                     color = PrimaryBlue,
-                    modifier = Modifier.padding(vertical = 12.dp)
+                    modifier = Modifier.padding(vertical = 8.dp)
                 )
+
+                // Strength indicator
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("强度:", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                    Text(strengthText, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = strengthColor)
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)).background(LightSurfaceVariant)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth(strengthPercent).height(6.dp).clip(RoundedCornerShape(3.dp)).background(strengthColor))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Length slider
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("长度", style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(LightSurfaceVariant)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Text(length.toInt().toString(), style = MaterialTheme.typography.labelLarge, color = PrimaryBlue)
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Slider(
+                    value = length,
+                    onValueChange = { length = it },
+                    valueRange = 6f..32f,
+                    steps = 25,
+                    colors = SliderDefaults.colors(
+                        thumbColor = PrimaryBlue,
+                        activeTrackColor = PrimaryBlue,
+                        inactiveTrackColor = LightSurfaceVariant
+                    )
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("6", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                    Text("32", style = MaterialTheme.typography.labelSmall, color = TextTertiary)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Character type switches
+                PasswordGeneratorSwitch(label = "大写字母 (A-Z)", checked = includeUppercase, onCheckedChange = { includeUppercase = it })
+                PasswordGeneratorSwitch(label = "小写字母 (a-z)", checked = includeLowercase, onCheckedChange = { includeLowercase = it })
+                PasswordGeneratorSwitch(label = "数字 (0-9)", checked = includeNumbers, onCheckedChange = { includeNumbers = it })
+                PasswordGeneratorSwitch(label = "符号 (!@#...)", checked = includeSymbols, onCheckedChange = { includeSymbols = it })
             }
         },
         confirmButton = {
-            Button(
+            TextButton(
                 onClick = { onGenerate(generatedPassword) },
-                enabled = generatedPassword.isNotEmpty(),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                shape = RoundedCornerShape(12.dp)
+                enabled = generatedPassword.isNotEmpty()
             ) {
-                Text("使用密码")
+                Text("使用密码", style = MaterialTheme.typography.labelLarge, color = PrimaryBlue)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", color = TextSecondary)
+                Text("取消", style = MaterialTheme.typography.labelLarge, color = TextSecondary)
             }
         }
     )
 }
 
 @Composable
+fun PasswordGeneratorSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = PrimaryBlue,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = LightSurfaceVariant
+            )
+        )
+    }
+}
+
+@Composable
 fun CategorySelectionField(
     selectedCategoryId: Long,
     categories: List<com.example.passvault.data.model.Category>,
-    onCategorySelected: (Long) -> Unit
+    onCategorySelected: (Long) -> Unit,
+    onAddCategory: ((String, Int) -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var showAddDialog by remember { mutableStateOf(false) }
     val selectedCategory = categories.find { it.id == selectedCategoryId }
 
     Column(
@@ -923,7 +1027,7 @@ fun CategorySelectionField(
             .clickable { expanded = true }
             .padding(16.dp)
     ) {
-        Text("分类", fontSize = 12.sp, color = TextSecondary)
+        Text("分类", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
         Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (selectedCategory != null) {
@@ -936,15 +1040,13 @@ fun CategorySelectionField(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = selectedCategory.name,
-                    fontSize = 15.sp,
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Medium),
                     modifier = Modifier.weight(1f)
                 )
             } else {
                 Text(
                     text = "选择分类",
-                    fontSize = 15.sp,
+                    style = MaterialTheme.typography.titleSmall,
                     color = TextTertiary,
                     modifier = Modifier.weight(1f)
                 )
@@ -971,7 +1073,7 @@ fun CategorySelectionField(
                                     .background(safeBrandColor(category.color))
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(category.name, color = TextPrimary, fontSize = 14.sp)
+                            Text(category.name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
                         }
                     },
                     onClick = {
@@ -980,6 +1082,64 @@ fun CategorySelectionField(
                     }
                 )
             }
+
+            // Add "Add New Category" button
+            if (categories.isNotEmpty()) {
+                HorizontalDivider(color = DividerColor, thickness = 1.dp, modifier = Modifier.padding(vertical = 4.dp))
+            }
+            DropdownMenuItem(
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(PrimaryBlue.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("添加新分类", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold), color = PrimaryBlue)
+                    }
+                },
+                onClick = {
+                    showAddDialog = true
+                    expanded = false
+                },
+                modifier = Modifier.background(PrimaryBlue.copy(alpha = 0.05f))
+            )
         }
     }
+
+    if (showAddDialog && onAddCategory != null) {
+        AddCategoryDialog(
+            onDismiss = { showAddDialog = false },
+            onConfirm = { name, color ->
+                onAddCategory(name, color)
+                showAddDialog = false
+            }
+        )
+    }
 }
+
+class LimitedPasswordVisualTransformation(
+    private val maxLength: Int = 12,
+    private val mask: Char = '•'
+) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val originalLength = text.text.length
+        val maskedLength = minOf(originalLength, maxLength)
+        val maskedText = AnnotatedString(mask.toString().repeat(maskedLength))
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                return minOf(offset, maskedLength)
+            }
+            override fun transformedToOriginal(offset: Int): Int {
+                return minOf(offset, originalLength)
+            }
+        }
+        return TransformedText(maskedText, offsetMapping)
+    }
+}
+

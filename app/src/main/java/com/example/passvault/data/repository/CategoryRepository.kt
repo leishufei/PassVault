@@ -45,7 +45,7 @@ class CategoryRepository @Inject constructor(
         category?.let {
             if (!it.isDefault) {
                 passwordDao.updatePasswordsCategory(id, 0)
-                categoryDao.deleteCategory(it)
+                categoryDao.logicalDeleteCategory(id, System.currentTimeMillis())
             }
         }
     }
