@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -30,15 +28,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.passvault.ui.theme.BrandColors
-import com.example.passvault.ui.theme.DialogBackground
-import com.example.passvault.ui.theme.LightSurfaceVariant
-import com.example.passvault.ui.theme.PrimaryBlue
-import com.example.passvault.ui.theme.TextPrimary
-import com.example.passvault.ui.theme.TextSecondary
-import com.example.passvault.ui.theme.TextTertiary
+import com.example.passvault.ui.theme.CategoryColors
+import com.example.passvault.ui.theme.safeCategoryColor
 
 @Composable
 fun AddCategoryDialog(
@@ -50,41 +42,59 @@ fun AddCategoryDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = DialogBackground,
-        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = MaterialTheme.shapes.large,
         title = {
-            Text("添加新分类", style = MaterialTheme.typography.titleLarge, color = TextPrimary)
+            Text(
+                "添加新分类",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
         },
         text = {
             Column {
                 // Category name input
-                Text("分类名称", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                Text(
+                    "分类名称",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = categoryName,
                     onValueChange = { categoryName = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("例如: 社交媒体", style = MaterialTheme.typography.bodyMedium, color = TextTertiary) },
+                    placeholder = {
+                        Text(
+                            "例如: 社交媒体",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryBlue,
-                        unfocusedBorderColor = LightSurfaceVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.surfaceVariant,
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.small,
                     singleLine = true
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Color picker
-                Text("选择颜色", style = MaterialTheme.typography.labelMedium, color = TextSecondary)
+                Text(
+                    "选择颜色",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    BrandColors.take(6).forEachIndexed { index, color ->
+                    CategoryColors.take(6).forEachIndexed { index, color ->
                         Box(
                             modifier = Modifier
                                 .size(40.dp)
@@ -92,7 +102,10 @@ fun AddCategoryDialog(
                                 .background(color)
                                 .border(
                                     width = if (selectedColorIndex == index) 3.dp else 1.dp,
-                                    color = if (selectedColorIndex == index) PrimaryBlue else LightSurfaceVariant,
+                                    color = if (selectedColorIndex == index)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.surfaceVariant,
                                     shape = CircleShape
                                 )
                                 .clickable { selectedColorIndex = index }
@@ -110,12 +123,23 @@ fun AddCategoryDialog(
                 },
                 enabled = categoryName.isNotBlank()
             ) {
-                Text("添加", style = MaterialTheme.typography.labelLarge, color = if (categoryName.isNotBlank()) PrimaryBlue else TextTertiary)
+                Text(
+                    "添加",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (categoryName.isNotBlank())
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("取消", style = MaterialTheme.typography.labelLarge, color = TextSecondary)
+                Text(
+                    "取消",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     )

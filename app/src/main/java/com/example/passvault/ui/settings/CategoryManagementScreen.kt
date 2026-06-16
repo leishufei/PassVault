@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -43,21 +42,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.passvault.data.model.Category
-import com.example.passvault.ui.theme.BrandColors
-import com.example.passvault.ui.theme.safeBrandColor
-import com.example.passvault.ui.theme.CardBackground
-import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.DialogBackground
-import com.example.passvault.ui.theme.LightSurfaceVariant
-import com.example.passvault.ui.theme.PrimaryBlue
-import com.example.passvault.ui.theme.TextPrimary
-import com.example.passvault.ui.theme.TextSecondary
-import com.example.passvault.ui.theme.TextTertiary
+import com.example.passvault.ui.theme.CategoryColors
+import com.example.passvault.ui.theme.safeCategoryColor
 
 @Composable
 fun CategoryManagementScreen(
@@ -87,20 +76,24 @@ fun CategoryManagementScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(LightSurfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(onClick = onNavigateBack),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Text(
                 text = "分类管理",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
 
@@ -108,7 +101,7 @@ fun CategoryManagementScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(PrimaryBlue)
+                    .background(MaterialTheme.colorScheme.primary)
                     .clickable {
                         editingCategory = null
                         newCategoryName = ""
@@ -117,7 +110,12 @@ fun CategoryManagementScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(18.dp))
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Add",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
 
@@ -153,13 +151,13 @@ fun CategoryManagementScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            containerColor = DialogBackground,
-            shape = RoundedCornerShape(24.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = MaterialTheme.shapes.large,
             title = {
                 Text(
                     if (editingCategory == null) "新建分类" else "编辑分类",
-                    color = TextPrimary,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             },
             text = {
@@ -167,19 +165,28 @@ fun CategoryManagementScreen(
                     OutlinedTextField(
                         value = newCategoryName,
                         onValueChange = { newCategoryName = it },
-                        label = { Text("分类名称", color = TextSecondary) },
-                        shape = RoundedCornerShape(16.dp),
+                        label = {
+                            Text(
+                                "分类名称",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        shape = MaterialTheme.shapes.medium,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary,
-                            focusedContainerColor = LightSurfaceVariant,
-                            unfocusedContainerColor = LightSurfaceVariant,
-                            focusedBorderColor = PrimaryBlue,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = Color.Transparent
                         )
                     )
 
-                    Text("选择颜色", color = TextSecondary, fontSize = 14.sp)
+                    Text(
+                        "选择颜色",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -197,7 +204,7 @@ fun CategoryManagementScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         for (i in 5 until 10) {
-                            val idx = i % BrandColors.size
+                            val idx = i % CategoryColors.size
                             ColorSelector(
                                 colorIndex = idx,
                                 isSelected = selectedColorIndex == idx,
@@ -220,15 +227,20 @@ fun CategoryManagementScreen(
                             showDialog = false
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    shape = RoundedCornerShape(12.dp)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    ),
+                    shape = MaterialTheme.shapes.small
                 ) {
                     Text("保存")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("取消", color = TextSecondary)
+                    Text(
+                        "取消",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         )
@@ -244,33 +256,33 @@ fun CategoryItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardBackground)
-            .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(10.dp)
                 .clip(CircleShape)
-                .background(safeBrandColor(category.color).copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(safeBrandColor(category.color))
-            )
-        }
+                .background(safeCategoryColor(category.color))
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(category.name, color = TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                category.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             if (category.isDefault) {
-                Text("默认分类", color = TextSecondary, fontSize = 12.sp)
+                Text(
+                    "默认分类",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
@@ -279,11 +291,16 @@ fun CategoryItem(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(LightSurfaceVariant)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(onClick = onEdit),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
 
             if (!category.isDefault) {
@@ -295,7 +312,12 @@ fun CategoryItem(
                         .clickable(onClick = onDelete),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -314,12 +336,15 @@ fun ColorSelector(
             .clip(CircleShape)
             .border(
                 width = if (isSelected) 2.dp else 0.dp,
-                color = if (isSelected) TextPrimary else Color.Transparent,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.onSurface
+                else
+                    Color.Transparent,
                 shape = CircleShape
             )
             .padding(4.dp)
             .clip(CircleShape)
-            .background(safeBrandColor(colorIndex))
+            .background(safeCategoryColor(colorIndex))
             .clickable(onClick = onClick)
     )
 }

@@ -35,27 +35,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.ui.passwords.PasswordViewModel
-import com.example.passvault.ui.theme.CardBackground
-import com.example.passvault.ui.theme.CardBorder
-import com.example.passvault.ui.theme.PrimaryBlue
-import com.example.passvault.ui.theme.PrimaryBlueLight
-import com.example.passvault.ui.theme.SuccessGreen
-import com.example.passvault.ui.theme.TextPrimary
-import com.example.passvault.ui.theme.TextSecondary
-import com.example.passvault.ui.theme.TextTertiary
-import com.example.passvault.ui.theme.WarningYellow
-import com.example.passvault.ui.theme.LightSurfaceVariant
+import com.example.passvault.ui.theme.SemanticError
+import com.example.passvault.ui.theme.SemanticSuccess
+import com.example.passvault.ui.theme.SemanticWarning
 
 @Composable
 fun GeneratorScreen(
@@ -87,9 +78,9 @@ fun GeneratorScreen(
         else -> "较弱"
     }
     val strengthColor = when {
-        length > 12 -> SuccessGreen
-        length > 8 -> WarningYellow
-        else -> Color(0xFFEF4444)
+        length > 12 -> SemanticSuccess
+        length > 8 -> SemanticWarning
+        else -> SemanticError
     }
     val strengthPercent = when {
         length > 12 -> 1.0f
@@ -105,9 +96,9 @@ fun GeneratorScreen(
         // Header
         Text(
             text = "生成密码",
-            fontSize = 26.sp,
+            style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
         )
 
@@ -121,9 +112,9 @@ fun GeneratorScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CardBackground)
-                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
                     .padding(16.dp)
             ) {
                 Row(
@@ -133,11 +124,10 @@ fun GeneratorScreen(
                 ) {
                     Text(
                         text = generatedPassword,
-                        fontSize = 20.sp,
-                        color = TextPrimary,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace,
-                        letterSpacing = 0.5.sp,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -146,8 +136,17 @@ fun GeneratorScreen(
 
                 // Strength
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("强度: ", fontSize = 13.sp, color = TextSecondary)
-                    Text(strengthText, fontSize = 13.sp, color = strengthColor, fontWeight = FontWeight.Bold)
+                    Text(
+                        "强度: ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        strengthText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = strengthColor,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Box(
@@ -155,7 +154,7 @@ fun GeneratorScreen(
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(LightSurfaceVariant)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Box(
                         modifier = Modifier
@@ -173,42 +172,76 @@ fun GeneratorScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Copy button
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(LightSurfaceVariant)
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .clickable {
                                 clipboardManager.setText(AnnotatedString(generatedPassword))
                                 copied = true
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                            Text(if (copied) "已复制" else "复制", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.ContentCopy,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                if (copied) "已复制" else "复制",
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
+                    // Regenerate button
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(44.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)))
+                            .clip(RoundedCornerShape(50))
+                            .background(MaterialTheme.colorScheme.primary)
                             .clickable {
                                 try {
                                     generatedPassword = viewModel.generatePassword(
-                                        PasswordConfig(length.toInt(), includeUppercase, includeLowercase, includeNumbers, includeSymbols)
+                                        PasswordConfig(
+                                            length.toInt(),
+                                            includeUppercase,
+                                            includeLowercase,
+                                            includeNumbers,
+                                            includeSymbols
+                                        )
                                     )
                                     copied = false
                                 } catch (e: Exception) { }
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                            Text("重新生成", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                "重新生成",
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
@@ -220,9 +253,9 @@ fun GeneratorScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(CardBackground)
-                    .border(1.dp, CardBorder, RoundedCornerShape(16.dp))
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
             ) {
                 // Length slider
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
@@ -231,14 +264,24 @@ fun GeneratorScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("密码长度", color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            "密码长度",
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(LightSurfaceVariant)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .padding(horizontal = 12.dp, vertical = 6.dp)
                         ) {
-                            Text(length.toInt().toString(), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                length.toInt().toString(),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -248,28 +291,78 @@ fun GeneratorScreen(
                         valueRange = 6f..32f,
                         steps = 25,
                         colors = SliderDefaults.colors(
-                            thumbColor = PrimaryBlue,
-                            activeTrackColor = PrimaryBlue,
-                            inactiveTrackColor = LightSurfaceVariant
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary,
+                            inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
                     )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("6", fontSize = 12.sp, color = TextTertiary)
-                        Text("32", fontSize = 12.sp, color = TextTertiary)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "6",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            "32",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
                 // Divider
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(LightSurfaceVariant))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
 
                 // Toggles
-                SettingSwitch(label = "大写字母 (A-Z)", checked = includeUppercase, onCheckedChange = { includeUppercase = it })
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(LightSurfaceVariant))
-                SettingSwitch(label = "小写字母 (a-z)", checked = includeLowercase, onCheckedChange = { includeLowercase = it })
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(LightSurfaceVariant))
-                SettingSwitch(label = "数字 (0-9)", checked = includeNumbers, onCheckedChange = { includeNumbers = it })
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 16.dp).background(LightSurfaceVariant))
-                SettingSwitch(label = "符号 (!@#...)", checked = includeSymbols, onCheckedChange = { includeSymbols = it })
+                SettingSwitch(
+                    label = "大写字母 (A-Z)",
+                    checked = includeUppercase,
+                    onCheckedChange = { includeUppercase = it }
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .padding(horizontal = 16.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+                SettingSwitch(
+                    label = "小写字母 (a-z)",
+                    checked = includeLowercase,
+                    onCheckedChange = { includeLowercase = it }
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .padding(horizontal = 16.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+                SettingSwitch(
+                    label = "数字 (0-9)",
+                    checked = includeNumbers,
+                    onCheckedChange = { includeNumbers = it }
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .padding(horizontal = 16.dp)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                )
+                SettingSwitch(
+                    label = "符号 (!@#...)",
+                    checked = includeSymbols,
+                    onCheckedChange = { includeSymbols = it }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -286,16 +379,22 @@ fun SettingSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        Text(
+            label,
+            color = MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium
+        )
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = PrimaryBlue,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color(0xFFE2E8F0)
+                uncheckedTrackColor = MaterialTheme.colorScheme.outline
             )
         )
     }
 }
+

@@ -2,65 +2,129 @@ package com.example.passvault.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ── Background System (Light Mode) ──────────────────────────────────────
-val LightBackground = Color(0xFFF0F9FF)          // 极浅灰蓝背景
-val LightSurface = Color(0xFFFFFFFF)              // 白色卡片/表面
-val LightSurfaceVariant = Color(0xFFE0F2FE)       // 浅蓝变体 (搜索框/输入框)
+// ── Canvas & Surface (Light) ────────────────────────────────────────────
+val Canvas = Color(0xFFF7F5F2)
+val Surface = Color(0xFFFFFFFF)
+val SurfaceVariant = Color(0xFFF0EEEB)
 
-// ── Card System ─────────────────────────────────────────────────────────
-val CardBackground = Color(0xFFFFFFFF)             // 白色卡片
-val CardBorder = Color(0xFFE0F2FE)                 // 浅蓝边框
+// ── Ink / Text (Light) ──────────────────────────────────────────────────
+val InkPrimary = Color(0xFF1A1A1A)
+val InkSecondary = Color(0xFF4A4744)
+val InkMuted = Color(0xFF787470)
+val InkFaint = Color(0xFFA8A29E)
 
-// ── Primary Colors ──────────────────────────────────────────────────────
-val PrimaryBlue = Color(0xFF0369A1)                // Security Blue 主色
-val PrimaryBlueLight = Color(0xFF0EA5E9)           // 辅助亮蓝
-val PrimaryBlueDark = Color(0xFF075985)            // 深蓝 (按下态)
+// ── Accent (single structural color) ────────────────────────────────────
+val Accent = Color(0xFF0075DE)
+val AccentPressed = Color(0xFF005BAB)
+val AccentSubtle = Color(0xFFEBF4FC)
 
-// ── Text Colors ─────────────────────────────────────────────────────────
-val TextPrimary = Color(0xFF0C4A6E)                // 深海蓝 (主文本)
-val TextSecondary = Color(0xFF64748B)              // 灰蓝 (次级文本)
-val TextTertiary = Color(0xFF94A3B8)               // 浅灰蓝 (提示文本)
+// ── Semantic ────────────────────────────────────────────────────────────
+val SemanticSuccess = Color(0xFF1A9E38)
+val SemanticError = Color(0xFFD93025)
+val SemanticWarning = Color(0xFFD97706)
 
-// ── Semantic Colors ─────────────────────────────────────────────────────
-val SuccessGreen = Color(0xFF22C55E)               // Protected Green
-val ErrorRed = Color(0xFFEF4444)                   // 错误/危险红
-val WarningYellow = Color(0xFFF59E0B)              // 警告黄
-val InfoBlue = Color(0xFF0EA5E9)                   // 信息蓝
+// ── Structural / Chrome (Light) ─────────────────────────────────────────
+val Hairline = Color(0xFFE6E3DF)
+val DividerLight = Color(0xFFEDEAE6)
 
-// ── Animation-specific Colors ───────────────────────────────────────────
-val AlertPulseRed = Color(0xFFDC2626)              // 弱密码脉冲警报
-val GlowGreen = Color(0xFF4ADE80)                  // 复制成功微光 (Glow)
+// ── Canvas & Surface (Dark) ─────────────────────────────────────────────
+val CanvasDark = Color(0xFF0F0F0F)
+val SurfaceDark = Color(0xFF1A1A1A)
+val SurfaceVariantDark = Color(0xFF242424)
 
-// ── Navigation ──────────────────────────────────────────────────────────
-val NavBarBackground = Color(0xFFFFFFFF)            // 导航栏白色
-val NavBarIndicator = Color(0x1A0369A1)             // 选中指示器 (PrimaryBlue 10%)
+// ── Ink / Text (Dark) ───────────────────────────────────────────────────
+val InkPrimaryDark = Color(0xFFEBEBEB)
+val InkSecondaryDark = Color(0xFFA8A29E)
+val InkMutedDark = Color(0xFF787470)
+val InkFaintDark = Color(0xFF524F4B)
 
-// ── Dialog / Overlay ────────────────────────────────────────────────────
-val DialogBackground = Color(0xFFFFFFFF)            // 对话框白色
-val DividerColor = Color(0xFFE2E8F0)               // 分割线
+// ── Accent (Dark) ───────────────────────────────────────────────────────
+val AccentDark = Color(0xFF4DA3E8)
+val AccentPressedDark = Color(0xFF3B8DD4)
+val AccentSubtleDark = Color(0xFF1A2A3D)
 
-// ── Brand Colors (for category icons) ───────────────────────────────────
-val BrandColors = listOf(
-    Color(0xFF4285F4),
-    Color(0xFF1877F2),
-    Color(0xFF6E40C9),
-    Color(0xFFE50914),
-    Color(0xFF1DA1F2),
-    Color(0xFF1677FF),
-    Color(0xFFCC0000),
-    Color(0xFF00B900),
-    Color(0xFFFF6900)
+// ── Semantic (Dark) ─────────────────────────────────────────────────────
+val SemanticSuccessDark = Color(0xFF3DB856)
+val SemanticErrorDark = Color(0xFFE85A4F)
+val SemanticWarningDark = Color(0xFFE8A030)
+
+// ── Structural / Chrome (Dark) ──────────────────────────────────────────
+val HairlineDark = Color(0xFF2E2E2E)
+val DividerLightDark = Color(0xFF242424)
+
+// ── Category Palette (decorative, desaturated) ──────────────────────────
+val CategoryColors = listOf(
+    Color(0xFF4A8FD4),
+    Color(0xFF5B6AC7),
+    Color(0xFF8B6BBF),
+    Color(0xFFC93F4A),
+    Color(0xFF2A9D99),
+    Color(0xFFC96A2E),
+    Color(0xFF3D9B56),
+    Color(0xFFC75B8F),
+    Color(0xFF7A5C3B)
 )
 
-/** Safe index into BrandColors — handles negative values from ARGB-overflow ints */
-fun safeBrandColor(index: Int): Color =
-    BrandColors[Math.floorMod(index, BrandColors.size)]
+fun safeCategoryColor(index: Int): Color =
+    CategoryColors[Math.floorMod(index, CategoryColors.size)]
 
-// ── Legacy Aliases (backward compat during transition) ──────────────────
-// These map old names to new values to minimize import breakage
-val DarkBackground = LightBackground
-val DarkSurface = LightSurface
-val DarkSurfaceVariant = LightSurfaceVariant
-val PrimaryPurple = PrimaryBlue
-val PrimaryPurpleLight = PrimaryBlueLight
-val PrimaryIndigo = PrimaryBlueDark
+// ── Legacy Aliases (deprecated, for incremental migration) ──────────────
+@Deprecated("Use Canvas", ReplaceWith("Canvas"))
+val LightBackground = Canvas
+@Deprecated("Use Surface", ReplaceWith("Surface"))
+val LightSurface = Surface
+@Deprecated("Use SurfaceVariant", ReplaceWith("SurfaceVariant"))
+val LightSurfaceVariant = SurfaceVariant
+@Deprecated("Use Surface", ReplaceWith("Surface"))
+val CardBackground = Surface
+@Deprecated("Use Hairline", ReplaceWith("Hairline"))
+val CardBorder = Hairline
+@Deprecated("Use Accent", ReplaceWith("Accent"))
+val PrimaryBlue = Accent
+@Deprecated("Use AccentPressed", ReplaceWith("AccentPressed"))
+val PrimaryBlueLight = Accent
+@Deprecated("Use AccentPressed", ReplaceWith("AccentPressed"))
+val PrimaryBlueDark = AccentPressed
+@Deprecated("Use InkPrimary", ReplaceWith("InkPrimary"))
+val TextPrimary = InkPrimary
+@Deprecated("Use InkSecondary", ReplaceWith("InkSecondary"))
+val TextSecondary = InkSecondary
+@Deprecated("Use InkMuted", ReplaceWith("InkMuted"))
+val TextTertiary = InkMuted
+@Deprecated("Use SemanticSuccess", ReplaceWith("SemanticSuccess"))
+val SuccessGreen = SemanticSuccess
+@Deprecated("Use SemanticError", ReplaceWith("SemanticError"))
+val ErrorRed = SemanticError
+@Deprecated("Use SemanticWarning", ReplaceWith("SemanticWarning"))
+val WarningYellow = SemanticWarning
+@Deprecated("Use Accent", ReplaceWith("Accent"))
+val InfoBlue = Accent
+@Deprecated("Use SemanticError", ReplaceWith("SemanticError"))
+val AlertPulseRed = SemanticError
+@Deprecated("Use SemanticSuccess", ReplaceWith("SemanticSuccess"))
+val GlowGreen = SemanticSuccess
+@Deprecated("Use Surface", ReplaceWith("Surface"))
+val NavBarBackground = Surface
+@Deprecated("Use AccentSubtle", ReplaceWith("AccentSubtle"))
+val NavBarIndicator = AccentSubtle
+@Deprecated("Use Surface", ReplaceWith("Surface"))
+val DialogBackground = Surface
+@Deprecated("Use Hairline", ReplaceWith("Hairline"))
+val DividerColor = Hairline
+@Deprecated("Use CategoryColors", ReplaceWith("CategoryColors"))
+val BrandColors = CategoryColors
+@Deprecated("Use safeCategoryColor", ReplaceWith("safeCategoryColor(index)"))
+fun safeBrandColor(index: Int): Color = safeCategoryColor(index)
+
+@Deprecated("Use Canvas", ReplaceWith("Canvas"))
+val DarkBackground = Canvas
+@Deprecated("Use Surface", ReplaceWith("Surface"))
+val DarkSurface = Surface
+@Deprecated("Use SurfaceVariant", ReplaceWith("SurfaceVariant"))
+val DarkSurfaceVariant = SurfaceVariant
+@Deprecated("Use Accent", ReplaceWith("Accent"))
+val PrimaryPurple = Accent
+@Deprecated("Use Accent", ReplaceWith("Accent"))
+val PrimaryPurpleLight = Accent
+@Deprecated("Use AccentPressed", ReplaceWith("AccentPressed"))
+val PrimaryIndigo = AccentPressed

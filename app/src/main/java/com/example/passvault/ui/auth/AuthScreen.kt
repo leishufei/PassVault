@@ -16,7 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -36,58 +36,34 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.passvault.ui.theme.PrimaryBlue
-import com.example.passvault.ui.theme.PrimaryBlueLight
-import com.example.passvault.ui.theme.TextPrimary
-import com.example.passvault.ui.theme.TextSecondary
-import com.example.passvault.ui.theme.LightSurfaceVariant
-import com.example.passvault.ui.theme.CardBorder
 
 @Composable
 fun LogoHeader() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(96.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(PrimaryBlue, PrimaryBlueLight)
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = null,
-                modifier = Modifier.size(44.dp),
-                tint = Color.White
-            )
-        }
+        Icon(
+            imageVector = Icons.Outlined.Lock,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "PassVault",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextPrimary,
-            letterSpacing = 0.5.sp
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "安全存储 · 随时访问",
-            fontSize = 14.sp,
-            color = TextSecondary
+            text = "安全存储，随时访问",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -104,28 +80,34 @@ fun AuthTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = TextSecondary) },
+        placeholder = {
+            Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        },
         modifier = Modifier.fillMaxWidth(),
-        visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation = if (isPasswordVisible) VisualTransformation.None
+            else PasswordVisualTransformation(),
         trailingIcon = {
             IconButton(onClick = onVisibilityChange) {
                 Icon(
-                    imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                    imageVector = if (isPasswordVisible) Icons.Default.VisibilityOff
+                        else Icons.Default.Visibility,
                     contentDescription = null,
-                    tint = TextSecondary
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(16.dp),
+        shape = MaterialTheme.shapes.small,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedContainerColor = LightSurfaceVariant,
-            unfocusedContainerColor = LightSurfaceVariant,
-            disabledContainerColor = LightSurfaceVariant,
-            focusedBorderColor = if (isError) MaterialTheme.colorScheme.error else PrimaryBlue,
-            unfocusedBorderColor = if (isError) MaterialTheme.colorScheme.error else CardBorder,
-            focusedTextColor = TextPrimary,
-            unfocusedTextColor = TextPrimary
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedBorderColor = if (isError) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = if (isError) MaterialTheme.colorScheme.error
+                else MaterialTheme.colorScheme.outline,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
         )
     )
 }
@@ -185,22 +167,18 @@ fun SetupScreen(
             onClick = { onSetPassword(password, confirmPassword) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                .height(52.dp),
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
             enabled = password.isNotEmpty() && confirmPassword.isNotEmpty()
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("开始使用", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-            }
+            Text(
+                "开始使用",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
     }
 }
@@ -256,36 +234,32 @@ fun LoginScreen(
             )
         }
 
-        // Sync status indicator
         when (syncStatus) {
             SyncStatus.Syncing -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "正在同步...",
-                    color = PrimaryBlue,
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
             SyncStatus.Success -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "同步成功",
-                    color = Color(0xFF10B981),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
             SyncStatus.Error -> {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "同步失败",
-                    color = Color(0xFFEF4444),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
-            SyncStatus.Idle -> { /* No sync status to show */ }
+            SyncStatus.Idle -> {}
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -294,32 +268,18 @@ fun LoginScreen(
             onClick = { onLogin(password) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
+                .height(52.dp),
+            shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent,
-                disabledContainerColor = Color.Transparent
-            ),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp,
-                disabledElevation = 0.dp,
-                hoveredElevation = 0.dp,
-                focusedElevation = 0.dp
+                containerColor = MaterialTheme.colorScheme.primary
             ),
             enabled = password.isNotEmpty()
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(listOf(PrimaryBlue, PrimaryBlueLight)),
-                        RoundedCornerShape(16.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("解锁", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-            }
+            Text(
+                "解锁",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onPrimary
+            )
         }
 
         Spacer(modifier = Modifier.weight(0.1f))
@@ -331,21 +291,25 @@ fun LoginScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(72.dp)
                         .clip(CircleShape)
-                        .background(PrimaryBlue.copy(alpha = 0.1f))
-                        .border(1.5.dp, PrimaryBlue.copy(alpha = 0.3f), CircleShape),
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Fingerprint,
                         contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = PrimaryBlue
+                        modifier = Modifier.size(36.dp),
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("使用指纹解锁", color = TextSecondary, fontSize = 13.sp)
+                Text(
+                    "使用指纹解锁",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
 
@@ -353,8 +317,8 @@ fun LoginScreen(
 
         Text(
             text = "忘记主密码?",
-            color = PrimaryBlue,
-            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
                 .padding(bottom = 32.dp)
                 .clickable { }
