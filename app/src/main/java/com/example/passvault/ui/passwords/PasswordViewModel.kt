@@ -168,15 +168,23 @@ class PasswordViewModel @Inject constructor(
         notes: String,
         iconColor: Int = 0,
         strength: Int = 0,
-        categoryId: Long = 0
+        categoryId: Long = 0,
+        onDuplicate: (() -> Unit)? = null,
+        onSaved: (() -> Unit)? = null
     ) {
         viewModelScope.launch {
+            val excludeId = id ?: 0L
+            if (repository.checkDuplicate(title, username, excludeId)) {
+                onDuplicate?.invoke()
+                return@launch
+            }
             if (id == null) {
                 repository.insertPassword(title, username, password, website, notes, iconColor, strength, categoryId)
             } else {
                 repository.updatePassword(id, title, username, password, website, notes, iconColor = iconColor, strength = strength, categoryId = categoryId)
             }
             triggerAutoSync()
+            onSaved?.invoke()
         }
     }
 

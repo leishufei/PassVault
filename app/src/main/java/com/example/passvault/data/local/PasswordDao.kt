@@ -60,6 +60,9 @@ interface PasswordDao {
     @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0 ORDER BY updatedAt DESC")
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntry>>
 
+    @Query("SELECT COUNT(*) FROM password_entries WHERE title = :title AND username = :username AND isDeleted = 0 AND id != :excludeId")
+    suspend fun countDuplicate(title: String, username: String, excludeId: Long): Int
+
     @Query("UPDATE password_entries SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun updatePasswordsCategory(oldCategoryId: Long, newCategoryId: Long)
 

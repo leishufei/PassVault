@@ -136,6 +136,10 @@ class PasswordRepository @Inject constructor(
         }
     }
 
+    suspend fun checkDuplicate(title: String, username: String, excludeId: Long = 0L): Boolean {
+        return passwordDao.countDuplicate(title, username, excludeId) > 0
+    }
+
     private fun PasswordEntry.toDisplay(): PasswordEntryDisplay {
         val decryptedPassword = cryptoManager.decrypt(
             EncryptedData(encryptedPassword, passwordIv)
