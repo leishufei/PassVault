@@ -26,7 +26,7 @@ object DatabaseModule {
             PasswordDatabase::class.java,
             "password_database"
         )
-            .addMigrations(PasswordDatabase.MIGRATION_4_5)
+            .addMigrations(PasswordDatabase.MIGRATION_4_5, PasswordDatabase.MIGRATION_5_6)
             .build()
     }
 

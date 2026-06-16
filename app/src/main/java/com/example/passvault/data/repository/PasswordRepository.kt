@@ -97,9 +97,11 @@ class PasswordRepository @Inject constructor(
         strength: Int = 0,
         categoryId: Long = 0
     ) {
+        val existing = passwordDao.getPasswordById(id)
         val encryptedData = cryptoManager.encrypt(password)
         val entry = PasswordEntry(
             id = id,
+            uuid = existing?.uuid ?: java.util.UUID.randomUUID().toString(),
             title = title,
             username = username,
             encryptedPassword = encryptedData.ciphertext,
@@ -110,6 +112,7 @@ class PasswordRepository @Inject constructor(
             iconColor = iconColor,
             strength = strength,
             categoryId = categoryId,
+            createdAt = existing?.createdAt ?: System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         )
         passwordDao.updatePassword(entry)
