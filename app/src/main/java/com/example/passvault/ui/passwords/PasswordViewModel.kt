@@ -8,6 +8,7 @@ import com.example.passvault.data.repository.CategoryRepository
 import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.data.repository.PasswordRepository
+import com.example.passvault.data.security.MasterPasswordManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import com.example.passvault.domain.generator.PasswordConfig
@@ -38,7 +39,8 @@ class PasswordViewModel @Inject constructor(
     private val repository: PasswordRepository,
     private val categoryRepository: CategoryRepository,
     private val passwordGenerator: PasswordGenerator,
-    private val syncScheduler: com.example.passvault.domain.sync.SyncScheduler
+    private val syncScheduler: com.example.passvault.domain.sync.SyncScheduler,
+    private val masterPasswordManager: MasterPasswordManager
 ) : ViewModel() {
 
     private val prefs = context.getSharedPreferences("passvault_filter", Context.MODE_PRIVATE)
@@ -201,6 +203,10 @@ class PasswordViewModel @Inject constructor(
 
     fun generatePassword(config: PasswordConfig): String {
         return passwordGenerator.generatePassword(config)
+    }
+
+    fun getPasswordDefaultVisible(): Boolean {
+        return masterPasswordManager.getPasswordDefaultVisible()
     }
 
     fun addCategory(name: String, colorIndex: Int) {

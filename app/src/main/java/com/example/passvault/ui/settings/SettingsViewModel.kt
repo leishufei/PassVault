@@ -50,9 +50,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val biometricEnabled = authManager.isBiometricEnabled()
             val autoLockTime = masterPasswordManager.getAutoLockTime()
+            val passwordDefaultVisible = masterPasswordManager.getPasswordDefaultVisible()
             _uiState.value = _uiState.value.copy(
                 biometricEnabled = biometricEnabled,
-                autoLockTime = autoLockTime
+                autoLockTime = autoLockTime,
+                passwordDefaultVisible = passwordDefaultVisible
             )
         }
     }
@@ -85,6 +87,11 @@ class SettingsViewModel @Inject constructor(
     fun setBiometricEnabled(enabled: Boolean) {
         authManager.setBiometricEnabled(enabled)
         _uiState.value = _uiState.value.copy(biometricEnabled = enabled)
+    }
+
+    fun setPasswordDefaultVisible(visible: Boolean) {
+        masterPasswordManager.setPasswordDefaultVisible(visible)
+        _uiState.value = _uiState.value.copy(passwordDefaultVisible = visible)
     }
 
     fun setAutoLockTime(time: String) {
@@ -254,6 +261,7 @@ class SettingsViewModel @Inject constructor(
 data class SettingsUiState(
     val biometricEnabled: Boolean = false,
     val autoLockTime: String = "5分钟",
+    val passwordDefaultVisible: Boolean = false,
     val passwordStats: PasswordStatistics? = null,
     val isSyncing: Boolean = false,
     val lastSyncMessage: String? = null,

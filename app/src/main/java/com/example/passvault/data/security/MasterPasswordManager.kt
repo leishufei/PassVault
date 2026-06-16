@@ -67,6 +67,16 @@ class MasterPasswordManager @Inject constructor(
             .apply()
     }
 
+    fun getPasswordDefaultVisible(): Boolean {
+        return sharedPreferences.getBoolean(KEY_PASSWORD_DEFAULT_VISIBLE, false)
+    }
+
+    fun setPasswordDefaultVisible(visible: Boolean) {
+        sharedPreferences.edit()
+            .putBoolean(KEY_PASSWORD_DEFAULT_VISIBLE, visible)
+            .apply()
+    }
+
     private fun hashPassword(password: String): String {
         val digest = MessageDigest.getInstance("SHA-256")
         val hash = digest.digest(password.toByteArray(Charsets.UTF_8))
@@ -79,5 +89,6 @@ class MasterPasswordManager @Inject constructor(
         private const val KEY_MASTER_PASSWORD_PLAINTEXT = "master_password_plaintext"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
         private const val KEY_AUTO_LOCK_TIME = "auto_lock_time"
+        private const val KEY_PASSWORD_DEFAULT_VISIBLE = "password_default_visible"
     }
 }
