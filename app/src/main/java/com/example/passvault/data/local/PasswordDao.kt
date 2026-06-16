@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PasswordDao {
 
-    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 ORDER BY createdAt DESC")
     fun getAllPasswords(): Flow<List<PasswordEntry>>
 
     @Query("SELECT * FROM password_entries WHERE id = :id")
@@ -57,7 +57,7 @@ interface PasswordDao {
     @Query("SELECT * FROM password_entries WHERE isDeleted = 0")
     suspend fun getAllPasswordsForAnalysis(): List<PasswordEntry>
 
-    @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0 ORDER BY createdAt DESC")
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntry>>
 
     @Query("SELECT COUNT(*) FROM password_entries WHERE title = :title AND username = :username AND isDeleted = 0 AND id != :excludeId")

@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -31,6 +30,11 @@ sealed class PasswordFilter {
     object FAVORITES : PasswordFilter()
     object RECENT : PasswordFilter()
     data class CATEGORY(val categoryId: Long) : PasswordFilter()
+}
+
+enum class SortOrder {
+    CREATED_DESC,
+    CREATED_ASC
 }
 
 @HiltViewModel
@@ -50,6 +54,9 @@ class PasswordViewModel @Inject constructor(
 
     private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.CATEGORY(0L))
     val filterMode: StateFlow<PasswordFilter> = _filterMode.asStateFlow()
+
+    private val _sortOrder = MutableStateFlow(SortOrder.CREATED_DESC)
+    val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
 
     private val _rawPasswords = MutableStateFlow<List<PasswordEntryListItem>>(emptyList())
 
@@ -76,8 +83,9 @@ class PasswordViewModel @Inject constructor(
     val passwords: StateFlow<List<PasswordEntryListItem>> = combine(
         _rawPasswords,
         _searchQuery,
-        _filterMode
-    ) { passwords, query, filter ->
+        _filterMode,
+        _sortOrder
+    ) { passwords, query, filter, sort ->
         var filtered = passwords
 
         if (query.isNotEmpty()) {
@@ -88,10 +96,22 @@ class PasswordViewModel @Inject constructor(
             }
         }
 
-        when (filter) {
+        filtered = when (filter) {
             PasswordFilter.FAVORITES -> filtered.filter { it.isFavorite }
             PasswordFilter.RECENT -> filtered.sortedByDescending { it.lastUsedAt }
-            is PasswordFilter.CATEGORY -> filtered.filter { it.categoryId == filter.categoryId }
+            is PasswordFilter.CATEGORY -> {
+                if (filter.categoryId == 0L) filtered
+                else filtered.filter { it.categoryId == filter.categoryId }
+            }
+        }
+
+        if (filter != PasswordFilter.RECENT) {
+            when (sort) {
+                SortOrder.CREATED_DESC -> filtered.sortedByDescending { it.createdAt }
+                SortOrder.CREATED_ASC -> filtered.sortedBy { it.createdAt }
+            }
+        } else {
+            filtered
         }
     }
     .distinctUntilChanged()
@@ -108,11 +128,8 @@ class PasswordViewModel @Inject constructor(
 
     private fun initCategoryFilter() {
         viewModelScope.launch {
-            val cats = categoryRepository.getAllCategories().first()
-            if (cats.isEmpty()) return@launch
-            val savedId = prefs.getLong(KEY_SELECTED_CATEGORY, -1L)
-            val targetId = if (savedId >= 0 && cats.any { it.id == savedId }) savedId else cats.first().id
-            _filterMode.value = PasswordFilter.CATEGORY(targetId)
+            val savedId = prefs.getLong(KEY_SELECTED_CATEGORY, 0L)
+            _filterMode.value = PasswordFilter.CATEGORY(savedId)
         }
     }
 
@@ -146,6 +163,10 @@ class PasswordViewModel @Inject constructor(
         if (filter is PasswordFilter.CATEGORY) {
             prefs.edit().putLong(KEY_SELECTED_CATEGORY, filter.categoryId).apply()
         }
+    }
+
+    fun setSortOrder(order: SortOrder) {
+        _sortOrder.value = order
     }
 
     fun toggleFavorite(id: Long, isFavorite: Boolean) {
