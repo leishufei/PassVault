@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.FilterList
@@ -795,10 +796,42 @@ fun PasswordListItem(
                     ) {
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    "复制密码",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        "复制用户名",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            },
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(password.username))
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        "复制密码",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             },
                             onClick = {
                                 onCopyPassword { decryptedPassword ->
@@ -809,29 +842,20 @@ fun PasswordListItem(
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    "复制用户名",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            },
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString(password.username))
-                                showMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "移动到分类…",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.DriveFileMove,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.DriveFileMove,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        "更改分类",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             },
                             onClick = {
                                 onMoveCategory()
@@ -840,11 +864,22 @@ fun PasswordListItem(
                         )
                         DropdownMenuItem(
                             text = {
-                                Text(
-                                    "删除",
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        "删除",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
                             },
                             onClick = {
                                 onDelete()
