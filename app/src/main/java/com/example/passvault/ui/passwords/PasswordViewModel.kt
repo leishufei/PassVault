@@ -58,6 +58,12 @@ class PasswordViewModel @Inject constructor(
     private val _sortOrder = MutableStateFlow(SortOrder.CREATED_DESC)
     val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
 
+    private val _selectionMode = MutableStateFlow(false)
+    val selectionMode: StateFlow<Boolean> = _selectionMode.asStateFlow()
+
+    private val _selectedIds = MutableStateFlow<Set<Long>>(emptySet())
+    val selectedIds: StateFlow<Set<Long>> = _selectedIds.asStateFlow()
+
     private val _rawPasswords = MutableStateFlow<List<PasswordEntryListItem>>(emptyList())
 
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
@@ -74,7 +80,7 @@ class PasswordViewModel @Inject constructor(
             counts[pw.categoryId] = (counts[pw.categoryId] ?: 0) + 1
         }
         counts
-    }.stateIn(
+    }.distinctUntilChanged().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = emptyMap()
@@ -214,6 +220,54 @@ class PasswordViewModel @Inject constructor(
     fun deletePassword(id: Long) {
         viewModelScope.launch {
             repository.deletePassword(id)
+            triggerAutoSync()
+        }
+    }
+
+    fun enterSelectionMode(initialId: Long) {
+        _selectionMode.value = true
+        _selectedIds.value = setOf(initialId)
+    }
+
+    fun toggleSelection(id: Long) {
+        val cur = _selectedIds.value
+        val next = if (id in cur) cur - id else cur + id
+        _selectedIds.value = next
+        if (next.isEmpty()) _selectionMode.value = false
+    }
+
+    fun selectAllVisible() {
+        _selectedIds.value = passwords.value.map { it.id }.toSet()
+    }
+
+    fun exitSelectionMode() {
+        _selectionMode.value = false
+        _selectedIds.value = emptySet()
+    }
+
+    fun bulkDelete() {
+        val ids = _selectedIds.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            repository.bulkDelete(ids)
+            triggerAutoSync()
+            exitSelectionMode()
+        }
+    }
+
+    fun bulkChangeCategory(newCategoryId: Long) {
+        val ids = _selectedIds.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            repository.bulkChangeCategory(ids, newCategoryId)
+            triggerAutoSync()
+            exitSelectionMode()
+        }
+    }
+
+    fun changeCategory(id: Long, newCategoryId: Long) {
+        viewModelScope.launch {
+            repository.changeCategory(id, newCategoryId)
             triggerAutoSync()
         }
     }

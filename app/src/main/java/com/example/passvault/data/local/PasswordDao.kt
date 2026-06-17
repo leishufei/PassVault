@@ -66,6 +66,15 @@ interface PasswordDao {
     @Query("UPDATE password_entries SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun updatePasswordsCategory(oldCategoryId: Long, newCategoryId: Long)
 
+    @Query("UPDATE password_entries SET isDeleted = 1, updatedAt = :timestamp WHERE id IN (:ids)")
+    suspend fun bulkLogicalDelete(ids: List<Long>, timestamp: Long)
+
+    @Query("UPDATE password_entries SET categoryId = :newCategoryId, updatedAt = :timestamp WHERE id IN (:ids)")
+    suspend fun bulkUpdateCategoryByIds(ids: List<Long>, newCategoryId: Long, timestamp: Long)
+
+    @Query("UPDATE password_entries SET categoryId = :newCategoryId, updatedAt = :timestamp WHERE id = :id")
+    suspend fun updateCategory(id: Long, newCategoryId: Long, timestamp: Long)
+
     @Query("DELETE FROM password_entries WHERE isDeleted = 1 AND updatedAt < :cutoff")
     suspend fun deleteOldTombstones(cutoff: Long)
 }

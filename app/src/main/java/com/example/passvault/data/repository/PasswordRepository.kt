@@ -1,11 +1,14 @@
 package com.example.passvault.data.repository
 
+import androidx.compose.runtime.Immutable
 import com.example.passvault.data.local.PasswordDao
 import com.example.passvault.data.model.PasswordEntry
 import com.example.passvault.data.security.CryptoManager
 import com.example.passvault.data.security.EncryptedData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,9 +30,9 @@ class PasswordRepository @Inject constructor(
         }
     }
 
-    suspend fun decryptPassword(id: Long): String? {
-        val entry = passwordDao.getPasswordById(id) ?: return null
-        return cryptoManager.decrypt(EncryptedData(entry.encryptedPassword, entry.passwordIv))
+    suspend fun decryptPassword(id: Long): String? = withContext(Dispatchers.IO) {
+        val entry = passwordDao.getPasswordById(id) ?: return@withContext null
+        cryptoManager.decrypt(EncryptedData(entry.encryptedPassword, entry.passwordIv))
     }
 
     suspend fun getPasswordById(id: Long): PasswordEntryDisplay? {
@@ -128,6 +131,20 @@ class PasswordRepository @Inject constructor(
 
     suspend fun deletePassword(id: Long) {
         passwordDao.logicalDelete(id, System.currentTimeMillis())
+    }
+
+    suspend fun bulkDelete(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        passwordDao.bulkLogicalDelete(ids, System.currentTimeMillis())
+    }
+
+    suspend fun bulkChangeCategory(ids: List<Long>, newCategoryId: Long) {
+        if (ids.isEmpty()) return
+        passwordDao.bulkUpdateCategoryByIds(ids, newCategoryId, System.currentTimeMillis())
+    }
+
+    suspend fun changeCategory(id: Long, newCategoryId: Long) {
+        passwordDao.updateCategory(id, newCategoryId, System.currentTimeMillis())
     }
 
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntryDisplay>> {
@@ -251,6 +268,7 @@ data class PasswordEntryDisplay(
     val isDeleted: Boolean
 )
 
+@Immutable
 data class PasswordEntryListItem(
     val id: Long,
     val title: String,
