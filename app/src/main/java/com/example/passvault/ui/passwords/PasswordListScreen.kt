@@ -59,6 +59,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +68,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -98,12 +101,19 @@ fun PasswordListScreen(
     val selectedIds by viewModel.selectedIds.collectAsState()
 
     var isSearchActive by remember { mutableStateOf(false) }
+    val searchFocusRequester = remember { FocusRequester() }
     var isFilterDropdownExpanded by remember { mutableStateOf(false) }
     var isCategoryExpanded by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var showCategoryPicker by remember { mutableStateOf(false) }
     var singleEditTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
+
+    LaunchedEffect(isSearchActive) {
+        if (isSearchActive) {
+            searchFocusRequester.requestFocus()
+        }
+    }
 
     BackHandler(enabled = selectionMode) { viewModel.exitSelectionMode() }
 
@@ -159,7 +169,7 @@ fun PasswordListScreen(
                                         BasicTextField(
                                             value = searchQuery,
                                             onValueChange = { viewModel.searchPasswords(it) },
-                                            modifier = Modifier.fillMaxWidth(),
+                                            modifier = Modifier.fillMaxWidth().focusRequester(searchFocusRequester),
                                             textStyle = MaterialTheme.typography.bodyMedium.copy(
                                                 color = MaterialTheme.colorScheme.onSurface
                                             ),
@@ -362,37 +372,51 @@ fun PasswordListScreen(
                         contentType = { "PasswordRow" }
                     ) { password ->
                         val isSelected = password.id in selectedIds
-                        PasswordListItem(
-                            password = password,
-                            selectionMode = selectionMode,
-                            isSelected = isSelected,
-                            modifier = Modifier.animateItem(),
-                            onClick = {
+                        val onClick = remember(password.id, selectionMode) {
+                            {
                                 if (selectionMode) {
                                     viewModel.toggleSelection(password.id)
                                 } else {
                                     viewModel.markAsUsed(password.id)
                                     onPasswordClick(password.id)
                                 }
-                            },
-                            onLongClick = {
+                            }
+                        }
+                        val onLongClick = remember(password.id, selectionMode) {
+                            {
                                 if (!selectionMode) viewModel.enterSelectionMode(password.id)
-                            },
-                            onFavoriteClick = {
-                                viewModel.toggleFavorite(password.id, !password.isFavorite)
-                            },
-                            onCopyPassword = { onCopied ->
+                            }
+                        }
+                        val onFavoriteClick = remember(password.id, password.isFavorite) {
+                            { viewModel.toggleFavorite(password.id, !password.isFavorite) }
+                        }
+                        val onCopyPassword = remember(password.id) {
+                            { onCopied: (String) -> Unit ->
                                 viewModel.decryptPassword(password.id) { decrypted ->
                                     onCopied(decrypted)
                                 }
-                            },
-                            onMoveCategory = {
+                            }
+                        }
+                        val onMoveCategory = remember(password.id) {
+                            {
                                 singleEditTarget = password
                                 showCategoryPicker = true
-                            },
-                            onDelete = {
-                                viewModel.deletePassword(password.id)
                             }
+                        }
+                        val onDelete = remember(password.id) {
+                            { viewModel.deletePassword(password.id) }
+                        }
+                        PasswordListItem(
+                            password = password,
+                            selectionMode = selectionMode,
+                            isSelected = isSelected,
+                            modifier = Modifier.animateItem(),
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                            onFavoriteClick = onFavoriteClick,
+                            onCopyPassword = onCopyPassword,
+                            onMoveCategory = onMoveCategory,
+                            onDelete = onDelete
                         )
                     }
                 }
@@ -674,9 +698,12 @@ fun PasswordListItem(
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val haptic = LocalHapticFeedback.current
-    val bgColor = safeCategoryColor(
-        if (password.iconColor != 0) password.iconColor else abs(password.title.hashCode())
-    )
+    val bgColor = remember(password.iconColor, password.title) {
+        safeCategoryColor(
+            if (password.iconColor != 0) password.iconColor else abs(password.title.hashCode())
+        )
+    }
+    val avatarLetter = remember(password.title) { password.title.take(1).uppercase() }
 
     val containerColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
@@ -734,7 +761,7 @@ fun PasswordListItem(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = password.title.take(1).uppercase(),
+                            text = avatarLetter,
                             color = Color.White,
                             style = MaterialTheme.typography.titleSmall
                         )

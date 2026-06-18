@@ -700,7 +700,7 @@ fun EditableFields(
     onAddCategory: (String, Int) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        DetailTextField(value = title, onValueChange = onTitleChange, label = "名称", placeholder = "例如: Google", readOnly = !isNewPassword)
+        DetailTextField(value = title, onValueChange = onTitleChange, label = "名称", placeholder = "例如: Google")
 
         CategorySelectionField(
             selectedCategoryId = categoryId, categories = categories,

@@ -96,10 +96,9 @@ fun GeneratorScreen(
         // Header
         Text(
             text = "生成密码",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         )
 
         Column(
@@ -138,12 +137,12 @@ fun GeneratorScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         "强度: ",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         strengthText,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelMedium,
                         color = strengthColor,
                         fontWeight = FontWeight.Bold
                     )
@@ -267,8 +266,7 @@ fun GeneratorScreen(
                         Text(
                             "密码长度",
                             color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Medium
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Box(
                             modifier = Modifier
@@ -279,7 +277,7 @@ fun GeneratorScreen(
                             Text(
                                 length.toInt().toString(),
                                 color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -382,8 +380,7 @@ fun SettingSwitch(label: String, checked: Boolean, onCheckedChange: (Boolean) ->
         Text(
             label,
             color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium
+            style = MaterialTheme.typography.bodyMedium
         )
         Switch(
             checked = checked,
