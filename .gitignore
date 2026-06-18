@@ -1,14 +1,31 @@
+# Gradle files
+.gradle/
 gradle.properties
-*.iml
-.gradle
-/local.properties
-/.idea
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
 build/
 app/build/
 build_log.txt
+
+# Local configuration
+local.properties
+*.iml
+
+# IDE files
+/.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Native build
+.externalNativeBuild
+.cxx
+/captures
+
+# Claude Code
+.claude/
+
+# CodeGraph
+.codegraph/
