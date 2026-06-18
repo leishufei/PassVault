@@ -22,15 +22,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
@@ -115,7 +117,7 @@ fun SettingsScreen(
         // Header
         Text(
             text = "设置",
-            style = MaterialTheme.typography.headlineSmall,
+            style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
         )
@@ -213,14 +215,14 @@ fun SettingsScreen(
                     .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
             ) {
                 SettingItem(
-                    icon = Icons.Default.Security,
+                    icon = Icons.Default.Folder,
                     title = "分类管理",
                     subtitle = "管理密码分类",
                     onClick = onNavigateToCategoryManagement
                 )
                 SettingDivider()
                 SettingItem(
-                    icon = Icons.Default.Shield,
+                    icon = Icons.Default.AutoAwesome,
                     title = "自动填充",
                     subtitle = "管理自动填写和保存设置",
                     onClick = onNavigateToAutofillSettings
@@ -284,16 +286,10 @@ fun SettingsScreen(
                     .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
             ) {
                 SettingItem(
-                    icon = Icons.Default.Shield,
+                    icon = Icons.Default.Info,
                     title = "关于 PassVault",
-                    subtitle = "版本 1.0.0",
-                    trailing = {
-                        Text(
-                            "1.0.0",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    subtitle = "版本 1.0",
+                    trailing = {}
                 )
             }
 

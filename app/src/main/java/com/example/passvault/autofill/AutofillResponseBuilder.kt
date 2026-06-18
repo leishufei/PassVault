@@ -92,6 +92,7 @@ class AutofillResponseBuilder @Inject constructor(
         inlineSpecs: List<InlinePresentationSpec>?
     ): Dataset? {
         val datasetBuilder = Dataset.Builder()
+        datasetBuilder.setId(entry.id.toString())
         val itemPresentation = remoteListItem(
             title = entry.title.ifBlank { context.getString(R.string.app_name) },
             subtitle = entry.username

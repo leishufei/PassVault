@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -46,6 +47,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Deselect
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -75,8 +77,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.passvault.data.repository.PasswordEntryListItem
@@ -106,8 +110,16 @@ fun PasswordListScreen(
     var isCategoryExpanded by remember { mutableStateOf(false) }
     var showAddCategoryDialog by remember { mutableStateOf(false) }
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
+    var singleDeleteTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
     var showCategoryPicker by remember { mutableStateOf(false) }
     var singleEditTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(filterMode, searchQuery, sortOrder) {
+        if (passwords.isNotEmpty()) {
+            listState.scrollToItem(0)
+        }
+    }
 
     LaunchedEffect(isSearchActive) {
         if (isSearchActive) {
@@ -131,8 +143,9 @@ fun PasswordListScreen(
                 if (inSelection) {
                     SelectionTopBar(
                         selectedCount = selectedIds.size,
+                        totalCount = passwords.size,
                         onClose = { viewModel.exitSelectionMode() },
-                        onSelectAll = { viewModel.selectAllVisible() },
+                        onToggleSelectAll = { viewModel.toggleSelectAll() },
                         onMoveCategory = {
                             singleEditTarget = null
                             showCategoryPicker = true
@@ -260,7 +273,11 @@ fun PasswordListScreen(
                                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                             }} else null,
                                             onClick = {
-                                                viewModel.setFilter(PasswordFilter.FAVORITES)
+                                                if (filterMode == PasswordFilter.FAVORITES) {
+                                                    viewModel.clearTagFilter()
+                                                } else {
+                                                    viewModel.setFilter(PasswordFilter.FAVORITES)
+                                                }
                                                 isFilterDropdownExpanded = false
                                             }
                                         )
@@ -273,7 +290,11 @@ fun PasswordListScreen(
                                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                             }} else null,
                                             onClick = {
-                                                viewModel.setFilter(PasswordFilter.RECENT)
+                                                if (filterMode == PasswordFilter.RECENT) {
+                                                    viewModel.clearTagFilter()
+                                                } else {
+                                                    viewModel.setFilter(PasswordFilter.RECENT)
+                                                }
                                                 isFilterDropdownExpanded = false
                                             }
                                         )
@@ -360,6 +381,7 @@ fun PasswordListScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
@@ -394,17 +416,22 @@ fun PasswordListScreen(
                             { onCopied: (String) -> Unit ->
                                 viewModel.decryptPassword(password.id) { decrypted ->
                                     onCopied(decrypted)
+                                    viewModel.markAsUsed(password.id)
                                 }
                             }
                         }
+                        val onCopyUsername = remember(password.id) {
+                            { viewModel.markAsUsed(password.id) }
+                        }
                         val onMoveCategory = remember(password.id) {
                             {
+                                viewModel.markAsUsed(password.id)
                                 singleEditTarget = password
                                 showCategoryPicker = true
                             }
                         }
                         val onDelete = remember(password.id) {
-                            { viewModel.deletePassword(password.id) }
+                            { singleDeleteTarget = password }
                         }
                         PasswordListItem(
                             password = password,
@@ -414,6 +441,7 @@ fun PasswordListScreen(
                             onClick = onClick,
                             onLongClick = onLongClick,
                             onFavoriteClick = onFavoriteClick,
+                            onCopyUsername = onCopyUsername,
                             onCopyPassword = onCopyPassword,
                             onMoveCategory = onMoveCategory,
                             onDelete = onDelete
@@ -519,17 +547,62 @@ fun PasswordListScreen(
             }
         )
     }
+
+    singleDeleteTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { singleDeleteTarget = null },
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "删除密码",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    "确定删除「${target.title}」吗？此操作无法撤销。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deletePassword(target.id)
+                    singleDeleteTarget = null
+                }) {
+                    Text(
+                        "删除",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { singleDeleteTarget = null }) {
+                    Text(
+                        "取消",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        )
+    }
 }
 
 @Composable
 private fun SelectionTopBar(
     selectedCount: Int,
+    totalCount: Int,
     onClose: () -> Unit,
-    onSelectAll: () -> Unit,
+    onToggleSelectAll: () -> Unit,
     onMoveCategory: () -> Unit,
     onDelete: () -> Unit
 ) {
     val hasSelection = selectedCount > 0
+    val isAllSelected = totalCount > 0 && selectedCount == totalCount
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -549,9 +622,13 @@ private fun SelectionTopBar(
             modifier = Modifier.weight(1f)
         )
         TopBarIconButton(
-            icon = Icons.Default.SelectAll,
-            contentDescription = "全选",
-            onClick = onSelectAll
+            icon = if (isAllSelected) Icons.Default.Deselect else Icons.Default.SelectAll,
+            contentDescription = if (isAllSelected) "取消全选" else "全选",
+            activeBackground = if (isAllSelected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surfaceVariant,
+            activeTint = if (isAllSelected) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.onSurfaceVariant,
+            onClick = onToggleSelectAll
         )
         TopBarIconButton(
             icon = Icons.Default.DriveFileMove,
@@ -609,6 +686,7 @@ fun CategoryChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
@@ -616,7 +694,10 @@ fun CategoryChip(
                 if (selected) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surfaceVariant
             )
-            .clickable(onClick = onClick)
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -691,12 +772,14 @@ fun PasswordListItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onFavoriteClick: () -> Unit,
+    onCopyUsername: () -> Unit,
     onCopyPassword: (onCopied: (String) -> Unit) -> Unit,
     onMoveCategory: () -> Unit,
     onDelete: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val bgColor = remember(password.iconColor, password.title) {
         safeCategoryColor(
@@ -840,6 +923,8 @@ fun PasswordListItem(
                             },
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(password.username))
+                                Toast.makeText(context, "已复制用户名", Toast.LENGTH_SHORT).show()
+                                onCopyUsername()
                                 showMenu = false
                             }
                         )
@@ -863,6 +948,7 @@ fun PasswordListItem(
                             onClick = {
                                 onCopyPassword { decryptedPassword ->
                                     clipboardManager.setText(AnnotatedString(decryptedPassword))
+                                    Toast.makeText(context, "已复制密码", Toast.LENGTH_SHORT).show()
                                 }
                                 showMenu = false
                             }

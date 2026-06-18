@@ -5,11 +5,13 @@ import android.os.Build
 import android.os.CancellationSignal
 import android.service.autofill.AutofillService
 import android.service.autofill.FillCallback
+import android.service.autofill.FillEventHistory
 import android.service.autofill.FillRequest
 import android.service.autofill.SaveCallback
 import android.service.autofill.SaveRequest
 import android.util.Log
 import android.widget.inline.InlinePresentationSpec
+import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.domain.auth.SessionManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +29,7 @@ class PassVaultAutofillService : AutofillService() {
     @Inject lateinit var matchingEngine: AutofillMatchingEngine
     @Inject lateinit var responseBuilder: AutofillResponseBuilder
     @Inject lateinit var sessionManager: SessionManager
+    @Inject lateinit var repository: PasswordRepository
 
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
@@ -41,6 +44,8 @@ class PassVaultAutofillService : AutofillService() {
         cancellationSignal: CancellationSignal,
         callback: FillCallback
     ) {
+        recordPreviousDatasetSelection()
+
         val structure = request.fillContexts.lastOrNull()?.structure
         if (structure == null) {
             callback.onSuccess(null)
@@ -108,6 +113,20 @@ class PassVaultAutofillService : AutofillService() {
         if (!enabled) return null
         val inlineRequest = request.inlineSuggestionsRequest ?: return null
         return inlineRequest.inlinePresentationSpecs
+    }
+
+    private fun recordPreviousDatasetSelection() {
+        val history: FillEventHistory = runCatching { fillEventHistory }.getOrNull() ?: return
+        val events = history.events ?: return
+        events.forEach { event ->
+            if (event.type == FillEventHistory.Event.TYPE_DATASET_SELECTED) {
+                val id = event.datasetId?.toLongOrNull() ?: return@forEach
+                serviceScope.launch {
+                    runCatching { repository.updateLastUsed(id) }
+                        .onFailure { Log.w(TAG, "updateLastUsed failed for $id", it) }
+                }
+            }
+        }
     }
 
     companion object {

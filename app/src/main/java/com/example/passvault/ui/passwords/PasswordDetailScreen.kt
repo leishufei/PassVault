@@ -391,7 +391,10 @@ fun PasswordDetailScreen(
                         modifier = Modifier.padding(vertical = 12.dp),
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
-                    FieldRow(label = "用户名", value = username, onCopy = { clipboardManager.setText(AnnotatedString(username)) })
+                    FieldRow(label = "用户名", value = username, onCopy = {
+                        clipboardManager.setText(AnnotatedString(username))
+                        passwordId?.let { viewModel.markAsUsed(it) }
+                    })
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 12.dp),
                         color = MaterialTheme.colorScheme.outlineVariant
@@ -400,7 +403,10 @@ fun PasswordDetailScreen(
                         password = password,
                         visible = passwordVisible,
                         onVisibilityToggle = { passwordVisible = !passwordVisible },
-                        onCopy = { clipboardManager.setText(AnnotatedString(password)) }
+                        onCopy = {
+                            clipboardManager.setText(AnnotatedString(password))
+                            passwordId?.let { viewModel.markAsUsed(it) }
+                        }
                     )
                     if (website.isNotEmpty()) {
                         HorizontalDivider(

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,6 +35,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -79,6 +81,7 @@ fun AutofillSettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .statusBarsPadding()
     ) {
         TopBar(title = "自动填充", onNavigateBack = onNavigateBack)
 
@@ -100,7 +103,8 @@ fun AutofillSettingsScreen(
                         Intent(Settings.ACTION_SETTINGS)
                     }
                     runCatching { context.startActivity(intent) }
-                }
+                },
+                onClickDisable = { viewModel.disableAutofillService() }
             )
 
             SectionTitle("行为")
@@ -200,7 +204,7 @@ private fun TopBar(title: String, onNavigateBack: () -> Unit) {
 }
 
 @Composable
-private fun ServiceStatusCard(enabled: Boolean, onClickEnable: () -> Unit) {
+private fun ServiceStatusCard(enabled: Boolean, onClickEnable: () -> Unit, onClickDisable: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -232,8 +236,8 @@ private fun ServiceStatusCard(enabled: Boolean, onClickEnable: () -> Unit) {
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
         if (!enabled) {
-            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onClickEnable,
                 modifier = Modifier
@@ -246,6 +250,19 @@ private fun ServiceStatusCard(enabled: Boolean, onClickEnable: () -> Unit) {
                 )
             ) {
                 Text("前往系统设置启用", style = MaterialTheme.typography.labelLarge)
+            }
+        } else {
+            OutlinedButton(
+                onClick = onClickDisable,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(50),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
+            ) {
+                Text("关闭自动填充服务", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

@@ -55,6 +55,16 @@ class AutofillSettingsViewModel @Inject constructor(
         sessionManager.clearAutofillSession()
     }
 
+    fun disableAutofillService() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val context = getApplication<Application>().applicationContext
+        val manager = context.getSystemService(AutofillManager::class.java) ?: return
+        if (manager.hasEnabledAutofillServices()) {
+            manager.disableAutofillServices()
+        }
+        refreshServiceState()
+    }
+
     private fun loadInitialState(): AutofillSettingsUiState {
         return AutofillSettingsUiState(
             serviceEnabled = isAutofillServiceEnabled(),

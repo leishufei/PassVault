@@ -49,10 +49,12 @@ class PasswordViewModel @Inject constructor(
 
     private val prefs = context.getSharedPreferences("passvault_filter", Context.MODE_PRIVATE)
 
+    private var lastSelectedCategoryId: Long = prefs.getLong(KEY_SELECTED_CATEGORY, 0L)
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.CATEGORY(0L))
+    private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.CATEGORY(lastSelectedCategoryId))
     val filterMode: StateFlow<PasswordFilter> = _filterMode.asStateFlow()
 
     private val _sortOrder = MutableStateFlow(SortOrder.CREATED_DESC)
@@ -129,13 +131,20 @@ class PasswordViewModel @Inject constructor(
 
     init {
         loadPasswords()
-        initCategoryFilter()
     }
 
-    private fun initCategoryFilter() {
-        viewModelScope.launch {
-            val savedId = prefs.getLong(KEY_SELECTED_CATEGORY, 0L)
-            _filterMode.value = PasswordFilter.CATEGORY(savedId)
+    fun setFilter(filter: PasswordFilter) {
+        _filterMode.value = filter
+        if (filter is PasswordFilter.CATEGORY) {
+            lastSelectedCategoryId = filter.categoryId
+            prefs.edit().putLong(KEY_SELECTED_CATEGORY, filter.categoryId).apply()
+        }
+    }
+
+    fun clearTagFilter() {
+        val target = PasswordFilter.CATEGORY(lastSelectedCategoryId)
+        if (_filterMode.value != target) {
+            _filterMode.value = target
         }
     }
 
@@ -162,13 +171,6 @@ class PasswordViewModel @Inject constructor(
 
     fun searchPasswords(query: String) {
         _searchQuery.value = query
-    }
-
-    fun setFilter(filter: PasswordFilter) {
-        _filterMode.value = filter
-        if (filter is PasswordFilter.CATEGORY) {
-            prefs.edit().putLong(KEY_SELECTED_CATEGORY, filter.categoryId).apply()
-        }
     }
 
     fun setSortOrder(order: SortOrder) {
@@ -211,6 +213,7 @@ class PasswordViewModel @Inject constructor(
                 repository.insertPassword(title, username, password, website, notes, iconColor, strength, categoryId)
             } else {
                 repository.updatePassword(id, title, username, password, website, notes, iconColor = iconColor, strength = strength, categoryId = categoryId)
+                repository.updateLastUsed(id)
             }
             triggerAutoSync()
             onSaved?.invoke()
@@ -236,8 +239,13 @@ class PasswordViewModel @Inject constructor(
         if (next.isEmpty()) _selectionMode.value = false
     }
 
-    fun selectAllVisible() {
-        _selectedIds.value = passwords.value.map { it.id }.toSet()
+    fun toggleSelectAll() {
+        val visibleIds = passwords.value.map { it.id }.toSet()
+        _selectedIds.value = if (_selectedIds.value.containsAll(visibleIds) && visibleIds.isNotEmpty()) {
+            emptySet()
+        } else {
+            visibleIds
+        }
     }
 
     fun exitSelectionMode() {

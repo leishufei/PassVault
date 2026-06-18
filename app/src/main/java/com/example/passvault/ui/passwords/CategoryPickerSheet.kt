@@ -67,13 +67,6 @@ fun CategoryPickerSheet(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 12.dp)
             )
 
-            CategoryPickerRow(
-                color = null,
-                name = "全部",
-                selected = currentCategoryId == 0L,
-                onClick = { onPick(0L); onDismiss() }
-            )
-
             categories.forEach { category ->
                 CategoryPickerRow(
                     color = safeCategoryColor(category.color),
@@ -138,8 +131,17 @@ private fun CategoryPickerRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(5.dp))
+            .background(
+                if (selected) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                } else {
+                    androidx.compose.ui.graphics.Color.Transparent
+                }
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
