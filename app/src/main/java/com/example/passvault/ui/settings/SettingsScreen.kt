@@ -65,6 +65,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun SettingsScreen(
     onLock: () -> Unit,
     onNavigateToCategoryManagement: () -> Unit = {},
+    onNavigateToAutofillSettings: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -216,6 +217,13 @@ fun SettingsScreen(
                     title = "分类管理",
                     subtitle = "管理密码分类",
                     onClick = onNavigateToCategoryManagement
+                )
+                SettingDivider()
+                SettingItem(
+                    icon = Icons.Default.Shield,
+                    title = "自动填充",
+                    subtitle = "管理自动填写和保存设置",
+                    onClick = onNavigateToAutofillSettings
                 )
             }
 

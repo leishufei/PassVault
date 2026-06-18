@@ -156,5 +156,11 @@ fun PassVaultAppContent() {
                 onNavigateBack = { navController.popBackStack() }
             )
         }
+
+        composable("autofill_settings") {
+            com.example.passvault.ui.settings.AutofillSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
     }
 }

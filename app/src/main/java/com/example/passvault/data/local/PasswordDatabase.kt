@@ -9,7 +9,7 @@ import com.example.passvault.data.model.PasswordEntry
 
 @Database(
     entities = [PasswordEntry::class, Category::class],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 abstract class PasswordDatabase : RoomDatabase() {
@@ -60,6 +60,12 @@ abstract class PasswordDatabase : RoomDatabase() {
                     )
                 """.trimIndent())
                 db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_password_entries_uuid ON password_entries(uuid)")
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE password_entries ADD COLUMN appPackageName TEXT NOT NULL DEFAULT ''")
             }
         }
     }

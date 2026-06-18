@@ -24,6 +24,12 @@ interface PasswordDao {
     @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND (title LIKE '%' || :query || '%' OR username LIKE '%' || :query || '%' OR website LIKE '%' || :query || '%')")
     fun searchPasswords(query: String): Flow<List<PasswordEntry>>
 
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND website = :website ORDER BY lastUsedAt DESC")
+    suspend fun findByWebsite(website: String): List<PasswordEntry>
+
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND appPackageName = :packageName ORDER BY lastUsedAt DESC")
+    suspend fun findByPackageName(packageName: String): List<PasswordEntry>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPassword(entry: PasswordEntry): Long
 

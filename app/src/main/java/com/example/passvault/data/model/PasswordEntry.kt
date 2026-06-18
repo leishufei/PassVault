@@ -18,6 +18,7 @@ data class PasswordEntry(
     val encryptedPassword: ByteArray,
     val passwordIv: ByteArray,
     val website: String = "",
+    val appPackageName: String = "",
     val notes: String = "",
     val isFavorite: Boolean = false,
     val lastUsedAt: Long = 0L,

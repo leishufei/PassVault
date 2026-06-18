@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">PassVault</string>
+
+    <!-- Autofill -->
+    <string name="autofill_unlock_title">解锁 PassVault 以填充 %1$d 个匹配账户</string>
+    <string name="autofill_unlock_inline_subtitle">%1$d 个匹配账户</string>
+    <string name="autofill_save_title">保存到 PassVault</string>
+    <string name="autofill_no_matches">无匹配账户</string>
+    <string name="autofill_settings_title">自动填充</string>
+    <string name="autofill_service_enabled">自动填充服务已启用</string>
+    <string name="autofill_service_disabled">自动填充服务未启用</string>
+    <string name="autofill_settings_enable">前往系统设置启用</string>
+    <string name="autofill_settings_session_title">解锁后会话保持</string>
+    <string name="autofill_settings_session_desc">认证后多长时间内不再要求验证</string>
+    <string name="autofill_settings_inline_title">内联建议</string>
+    <string name="autofill_settings_inline_desc">在键盘上方显示账户建议（Android 11+）</string>
 </resources>

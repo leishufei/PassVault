@@ -98,6 +98,9 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
     implementation("net.zetetic:sqlcipher-android:4.6.1")
 
+    // Autofill (inline suggestions, Android 11+)
+    implementation("androidx.autofill:autofill:1.1.0")
+
     // CSV & JSON
     implementation("com.jsoizo:kotlin-csv-jvm:1.10.0")
     implementation("com.google.code.gson:gson:2.10.1")
@@ -114,6 +117,8 @@ dependencies {
 
     // Testing
     testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation(composeBom)

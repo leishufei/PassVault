@@ -91,6 +91,9 @@ fun MainScreen(
                     onLock = onLock,
                     onNavigateToCategoryManagement = {
                         rootNavController.navigate("category_management")
+                    },
+                    onNavigateToAutofillSettings = {
+                        rootNavController.navigate("autofill_settings")
                     }
                 )
             }

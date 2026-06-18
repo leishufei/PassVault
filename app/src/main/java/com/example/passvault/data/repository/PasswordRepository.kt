@@ -53,7 +53,8 @@ class PasswordRepository @Inject constructor(
         notes: String = "",
         iconColor: Int = 0,
         strength: Int = 0,
-        categoryId: Long = 0
+        categoryId: Long = 0,
+        appPackageName: String = ""
     ): Long {
         val encryptedData = cryptoManager.encrypt(password)
         val entry = PasswordEntry(
@@ -62,6 +63,7 @@ class PasswordRepository @Inject constructor(
             encryptedPassword = encryptedData.ciphertext,
             passwordIv = encryptedData.iv,
             website = website,
+            appPackageName = appPackageName,
             notes = notes,
             iconColor = iconColor,
             strength = strength,
@@ -79,6 +81,7 @@ class PasswordRepository @Inject constructor(
                 encryptedPassword = encryptedData.ciphertext,
                 passwordIv = encryptedData.iv,
                 website = data.website,
+                appPackageName = data.appPackageName,
                 notes = data.notes,
                 iconColor = data.iconColor,
                 strength = data.strength,
@@ -98,7 +101,8 @@ class PasswordRepository @Inject constructor(
         isFavorite: Boolean = false,
         iconColor: Int = 0,
         strength: Int = 0,
-        categoryId: Long = 0
+        categoryId: Long = 0,
+        appPackageName: String = ""
     ) {
         val existing = passwordDao.getPasswordById(id)
         val encryptedData = cryptoManager.encrypt(password)
@@ -110,6 +114,7 @@ class PasswordRepository @Inject constructor(
             encryptedPassword = encryptedData.ciphertext,
             passwordIv = encryptedData.iv,
             website = website,
+            appPackageName = appPackageName,
             notes = notes,
             isFavorite = isFavorite,
             iconColor = iconColor,
@@ -157,6 +162,18 @@ class PasswordRepository @Inject constructor(
         return passwordDao.countDuplicate(title, username, excludeId) > 0
     }
 
+    suspend fun findByWebsite(website: String): List<PasswordEntry> = withContext(Dispatchers.IO) {
+        passwordDao.findByWebsite(website)
+    }
+
+    suspend fun findByPackageName(packageName: String): List<PasswordEntry> = withContext(Dispatchers.IO) {
+        passwordDao.findByPackageName(packageName)
+    }
+
+    fun decryptPassword(entry: PasswordEntry): String {
+        return cryptoManager.decrypt(EncryptedData(entry.encryptedPassword, entry.passwordIv))
+    }
+
     private fun PasswordEntry.toDisplay(): PasswordEntryDisplay {
         val decryptedPassword = cryptoManager.decrypt(
             EncryptedData(encryptedPassword, passwordIv)
@@ -167,6 +184,7 @@ class PasswordRepository @Inject constructor(
             username = username,
             password = decryptedPassword,
             website = website,
+            appPackageName = appPackageName,
             notes = notes,
             isFavorite = isFavorite,
             lastUsedAt = lastUsedAt,
@@ -185,6 +203,7 @@ class PasswordRepository @Inject constructor(
             title = title,
             username = username,
             website = website,
+            appPackageName = appPackageName,
             isFavorite = isFavorite,
             lastUsedAt = lastUsedAt,
             iconColor = iconColor,
@@ -257,6 +276,7 @@ data class PasswordEntryDisplay(
     val username: String,
     val password: String,
     val website: String,
+    val appPackageName: String,
     val notes: String,
     val isFavorite: Boolean,
     val lastUsedAt: Long,
@@ -274,6 +294,7 @@ data class PasswordEntryListItem(
     val title: String,
     val username: String,
     val website: String,
+    val appPackageName: String,
     val isFavorite: Boolean,
     val lastUsedAt: Long,
     val iconColor: Int,
@@ -296,6 +317,7 @@ data class PasswordImportData(
     val username: String,
     val password: String,
     val website: String = "",
+    val appPackageName: String = "",
     val notes: String = "",
     val iconColor: Int = 0,
     val strength: Int = 0,
