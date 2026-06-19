@@ -75,6 +75,8 @@ class PasswordRepository @Inject constructor(
     suspend fun insertPasswords(passwords: List<PasswordImportData>) {
         val entries = passwords.map { data ->
             val encryptedData = cryptoManager.encrypt(data.password)
+            val resolvedStrength = if (data.strength > 0) data.strength
+            else calculatePasswordStrength(data.password)
             PasswordEntry(
                 title = data.title,
                 username = data.username,
@@ -84,11 +86,42 @@ class PasswordRepository @Inject constructor(
                 appPackageName = data.appPackageName,
                 notes = data.notes,
                 iconColor = data.iconColor,
-                strength = data.strength,
+                strength = resolvedStrength,
                 categoryId = data.categoryId
             )
         }
         passwordDao.insertPasswords(entries)
+    }
+
+    /**
+     * Updates an existing password identified by [id], preserving non-CSV fields
+     * (isFavorite, lastUsedAt, appPackageName, iconColor, createdAt, uuid).
+     * Returns true if the entry existed and was updated.
+     */
+    suspend fun updatePasswordFromImport(
+        id: Long,
+        title: String,
+        username: String,
+        password: String,
+        website: String,
+        notes: String,
+        categoryId: Long
+    ): Boolean = withContext(Dispatchers.IO) {
+        val existing = passwordDao.getPasswordById(id) ?: return@withContext false
+        val encryptedData = cryptoManager.encrypt(password)
+        val updated = existing.copy(
+            title = title,
+            username = username,
+            encryptedPassword = encryptedData.ciphertext,
+            passwordIv = encryptedData.iv,
+            website = website,
+            notes = notes,
+            categoryId = categoryId,
+            strength = calculatePasswordStrength(password),
+            updatedAt = System.currentTimeMillis()
+        )
+        passwordDao.updatePassword(updated)
+        true
     }
 
     suspend fun updatePassword(
@@ -180,6 +213,7 @@ class PasswordRepository @Inject constructor(
         )
         return PasswordEntryDisplay(
             id = id,
+            uuid = uuid,
             title = title,
             username = username,
             password = decryptedPassword,
@@ -272,6 +306,7 @@ class PasswordRepository @Inject constructor(
 
 data class PasswordEntryDisplay(
     val id: Long,
+    val uuid: String,
     val title: String,
     val username: String,
     val password: String,

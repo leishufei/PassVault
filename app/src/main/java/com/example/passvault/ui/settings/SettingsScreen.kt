@@ -48,6 +48,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,7 +65,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.passvault.domain.csv.ImportProgress
 
 @Composable
 fun SettingsScreen(
@@ -73,6 +80,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val shouldLockNow by viewModel.shouldLockNow.collectAsState()
+    val importProgress by viewModel.importProgress.collectAsState()
 
     LaunchedEffect(shouldLockNow) {
         if (shouldLockNow) {
@@ -81,11 +89,31 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(importProgress) {
+        when (val state = importProgress) {
+            is ImportProgress.Complete -> {
+                val msg = "导入完成: 更新 ${state.updated} 条, 新增 ${state.inserted} 条"
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                viewModel.resetImportProgress()
+            }
+            is ImportProgress.Error -> {
+                Toast.makeText(context, state.message, Toast.LENGTH_LONG).show()
+                viewModel.resetImportProgress()
+            }
+            else -> Unit
+        }
+    }
+
     var showSafeDialog by remember { mutableStateOf(false) }
     var showAutoLockDialog by remember { mutableStateOf(false) }
     var showMasterPasswordDialog by remember { mutableStateOf(false) }
 
     val autoLockOptions = listOf("立即", "1分钟", "5分钟", "10分钟", "永不")
+
+    val timestampedFileName = remember {
+        val dateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())
+        "PassVault_Backup_${dateFormat.format(Date())}.csv"
+    }
 
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -103,9 +131,7 @@ fun SettingsScreen(
 
     val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            viewModel.importCsv(uri)
-                .onSuccess { Toast.makeText(context, "数据导入成功", Toast.LENGTH_SHORT).show() }
-                .onFailure { Toast.makeText(context, "导入失败: ${it.message}", Toast.LENGTH_SHORT).show() }
+            viewModel.validateCsv(uri)
         }
     }
 
@@ -193,7 +219,7 @@ fun SettingsScreen(
                     icon = Icons.Default.Backup,
                     title = "导出密码",
                     subtitle = "导出为 CSV 格式",
-                    onClick = { backupLauncher.launch("PassVault_Backup.csv") }
+                    onClick = { backupLauncher.launch(timestampedFileName) }
                 )
                 SettingDivider()
                 SettingItem(
@@ -327,6 +353,89 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    when (val state = importProgress) {
+        ImportProgress.Validating -> {
+            Dialog(
+                onDismissRequest = {},
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("正在解析 CSV...", color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            }
+        }
+        is ImportProgress.Importing -> {
+            Dialog(
+                onDismissRequest = {},
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.4f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clip(MaterialTheme.shapes.medium)
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            "正在导入 ${state.current + 1}/${state.total}...",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        }
+        is ImportProgress.ValidationComplete -> {
+            ImportPreviewDialog(
+                result = state.result,
+                onConfirm = { selectedRows ->
+                    val filteredResult = state.result.copy(validRows = selectedRows)
+                    viewModel.executeImport(filteredResult)
+                },
+                onDismiss = { viewModel.resetImportProgress() }
+            )
+        }
+        else -> Unit
     }
 
     // Security dialog

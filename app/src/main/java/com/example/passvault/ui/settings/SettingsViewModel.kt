@@ -5,10 +5,16 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.passvault.data.repository.CategoryRepository
+import com.example.passvault.data.repository.PasswordImportData
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.data.repository.PasswordStatistics
 import com.example.passvault.data.security.MasterPasswordManager
 import com.example.passvault.domain.auth.AuthManager
+import com.example.passvault.domain.csv.CsvValidator
+import com.example.passvault.domain.csv.CsvValidationResult
+import com.example.passvault.domain.csv.ImportAction
+import com.example.passvault.domain.csv.ImportProgress
+import com.example.passvault.domain.csv.ValidatedPasswordRow
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,7 +22,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -40,6 +45,11 @@ class SettingsViewModel @Inject constructor(
 
     private val _shouldLockNow = MutableStateFlow(false)
     val shouldLockNow: StateFlow<Boolean> = _shouldLockNow.asStateFlow()
+
+    private val _importProgress = MutableStateFlow<ImportProgress>(ImportProgress.Idle)
+    val importProgress: StateFlow<ImportProgress> = _importProgress.asStateFlow()
+
+    private val csvValidator = CsvValidator()
 
     init {
         loadSettings()
@@ -131,16 +141,29 @@ class SettingsViewModel @Inject constructor(
                 val categoryMap = categories.associate { it.id to it.name }
 
                 val rows = buildList {
-                    add(listOf("分类", "名称", "用户名", "密码"))
+                    add(CsvValidator.EXTENDED_HEADERS)
                     passwords.forEach { password ->
-                        val categoryName = categoryMap[password.categoryId] ?: "未分类"
-                        add(listOf(categoryName, password.title, password.username, password.password))
+                        val categoryName = categoryMap[password.categoryId] ?: CsvValidator.UNCATEGORIZED
+                        add(
+                            listOf(
+                                password.uuid,
+                                categoryName,
+                                password.title,
+                                password.username,
+                                password.password,
+                                password.website,
+                                password.notes
+                            )
+                        )
                     }
                 }
 
-                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    csvWriter().open(outputStream) {
-                        writeRows(rows)
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        outputStream.write(byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()))
+                        csvWriter().open(outputStream) {
+                            writeRows(rows)
+                        }
                     }
                 }
             }
@@ -150,67 +173,116 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun importCsv(uri: Uri): Result<Unit> {
-        return try {
-            viewModelScope.launch {
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    val records = csvReader().readAll(inputStream)
-                    if (records.isEmpty()) return@launch
+    /**
+     * Reads and validates a CSV file. The result is published via [importProgress];
+     * callers observe the flow and show the preview dialog when the state becomes
+     * [ImportProgress.ValidationComplete].
+     */
+    fun validateCsv(uri: Uri) {
+        viewModelScope.launch {
+            _importProgress.value = ImportProgress.Validating
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val records = context.contentResolver.openInputStream(uri)?.use { input ->
+                        csvReader().readAll(input)
+                    } ?: emptyList()
+                    val passwords = passwordRepository.getAllPasswords().first()
+                    val categories = categoryRepository.getAllCategories().first()
+                    csvValidator.validate(records, passwords, categories)
+                }
+                _importProgress.value = ImportProgress.ValidationComplete(result)
+            } catch (e: Exception) {
+                _importProgress.value = ImportProgress.Error("解析失败: ${e.message}")
+            }
+        }
+    }
 
-                    val startIdx = if (records[0].size >= 4 &&
-                        (records[0][0].contains("分类") || records[0][1].contains("名称"))) 1 else 0
+    /**
+     * Executes the import based on a previously computed [CsvValidationResult].
+     * Handles category creation, batched updates, and inserts in IO context.
+     */
+    fun executeImport(result: CsvValidationResult) {
+        viewModelScope.launch {
+            try {
+                val total = result.validRows.size
+                if (total == 0) {
+                    _importProgress.value = ImportProgress.Complete(0, 0)
+                    return@launch
+                }
 
-                    val currentCategories = categoryRepository.getAllCategories().first().toMutableList()
-                    val passwordsToInsert = mutableListOf<com.example.passvault.data.repository.PasswordImportData>()
+                val categoryIdByName = withContext(Dispatchers.IO) {
+                    val categories = categoryRepository.getAllCategories().first().toMutableList()
+                    val map = categories.associate { it.name.lowercase() to it.id }.toMutableMap()
+                    result.newCategoryNames.forEach { name ->
+                        val key = name.lowercase()
+                        if (!map.containsKey(key)) {
+                            val newId = categoryRepository.insertCategory(name, (0..5).random())
+                            map[key] = newId
+                        }
+                    }
+                    map
+                }
 
-                    for (idx in startIdx until records.size) {
-                        val record = records[idx]
-                        if (record.size < 4) continue
-                        val categoryName = record[0].trim()
-                        val title = record[1].trim()
-                        val username = record[2].trim()
-                        val password = record[3]
+                var updated = 0
+                var inserted = 0
+                val pendingInserts = mutableListOf<PasswordImportData>()
 
-                        if (title.isEmpty()) continue
-
-                        var categoryId = 0L
-                        if (categoryName.isNotEmpty() && categoryName != "未分类") {
-                            val existingCategory = currentCategories.find { it.name.equals(categoryName, ignoreCase = true) }
-                            if (existingCategory != null) {
-                                categoryId = existingCategory.id
-                            } else {
-                                val newColor = (0..5).random()
-                                val newId = categoryRepository.insertCategory(categoryName, newColor)
-                                categoryId = newId
-                                currentCategories.add(
-                                    com.example.passvault.data.model.Category(
-                                        id = newId,
-                                        name = categoryName,
-                                        color = newColor
-                                    )
+                withContext(Dispatchers.IO) {
+                    result.validRows.forEachIndexed { index, row ->
+                        _importProgress.value = ImportProgress.Importing(index, total)
+                        val categoryId = resolveCategoryId(row, categoryIdByName)
+                        when (row.action) {
+                            ImportAction.UPDATE -> {
+                                val ok = passwordRepository.updatePasswordFromImport(
+                                    id = row.existingId ?: 0L,
+                                    title = row.title,
+                                    username = row.username,
+                                    password = row.password,
+                                    website = row.website,
+                                    notes = row.notes,
+                                    categoryId = categoryId
                                 )
+                                if (ok) updated++ else pendingInserts.add(row.toImportData(categoryId))
+                            }
+                            ImportAction.INSERT -> {
+                                pendingInserts.add(row.toImportData(categoryId))
                             }
                         }
-
-                        passwordsToInsert.add(
-                            com.example.passvault.data.repository.PasswordImportData(
-                                title = title,
-                                username = username,
-                                password = password,
-                                categoryId = categoryId
-                            )
-                        )
                     }
-                    
-                    if (passwordsToInsert.isNotEmpty()) {
-                        passwordRepository.insertPasswords(passwordsToInsert)
+                    if (pendingInserts.isNotEmpty()) {
+                        passwordRepository.insertPasswords(pendingInserts)
+                        inserted += pendingInserts.size
                     }
                 }
+
+                _importProgress.value = ImportProgress.Complete(updated, inserted)
+            } catch (e: Exception) {
+                _importProgress.value = ImportProgress.Error("导入失败: ${e.message}")
             }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
         }
+    }
+
+    fun resetImportProgress() {
+        _importProgress.value = ImportProgress.Idle
+    }
+
+    private fun resolveCategoryId(
+        row: ValidatedPasswordRow,
+        categoryIdByName: Map<String, Long>
+    ): Long {
+        if (row.categoryName == CsvValidator.UNCATEGORIZED) return 0L
+        return categoryIdByName[row.categoryName.lowercase()] ?: 0L
+    }
+
+    private fun ValidatedPasswordRow.toImportData(categoryId: Long): PasswordImportData {
+        return PasswordImportData(
+            title = title,
+            username = username,
+            password = password,
+            website = website,
+            notes = notes,
+            categoryId = categoryId
+        )
     }
 
     /** 返回 Google 登录 Intent，由 UI 层通过 ActivityResultLauncher 发起 */
