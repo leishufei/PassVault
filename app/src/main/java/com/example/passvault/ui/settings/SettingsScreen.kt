@@ -27,11 +27,11 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
@@ -181,7 +181,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Data section
-            SectionTitle("数据")
+            SectionTitle("本地备份")
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -197,7 +197,7 @@ fun SettingsScreen(
                 )
                 SettingDivider()
                 SettingItem(
-                    icon = Icons.Default.Restore,
+                    icon = Icons.Default.FileDownload,
                     title = "导入密码",
                     subtitle = "从 CSV 导入密码",
                     onClick = { restoreLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain")) }
