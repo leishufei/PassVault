@@ -50,6 +50,14 @@ class CategoryRepository @Inject constructor(
         }
     }
 
+    suspend fun updateCategorySortOrder(id: Long, sortOrder: Int) {
+        val category = categoryDao.getCategoryById(id)
+        category?.let {
+            val updated = it.copy(sortOrder = sortOrder)
+            categoryDao.updateCategory(updated)
+        }
+    }
+
     suspend fun initializeDefaultCategories() {
         val allCategories = categoryDao.getAllCategories().first()
         val defaultCategories = allCategories.filter { it.isDefault }

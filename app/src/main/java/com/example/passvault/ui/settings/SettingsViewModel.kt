@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.passvault.data.repository.CategoryRepository
+import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.data.repository.PasswordImportData
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.data.repository.PasswordStatistics
@@ -139,10 +140,19 @@ class SettingsViewModel @Inject constructor(
                 val passwords = passwordRepository.getAllPasswords().first()
                 val categories = categoryRepository.getAllCategories().first()
                 val categoryMap = categories.associate { it.id to it.name }
+                val categorySortOrderMap = categories.associate { it.id to it.sortOrder }
+
+                val sortedPasswords = passwords.sortedWith(compareBy(
+                    { password: PasswordEntryDisplay ->
+                        if (password.categoryId == 0L) -1 else categorySortOrderMap[password.categoryId] ?: Int.MAX_VALUE
+                    },
+                    { password: PasswordEntryDisplay -> password.categoryId },
+                    { password: PasswordEntryDisplay -> password.createdAt }
+                ))
 
                 val rows = buildList {
                     add(CsvValidator.EXTENDED_HEADERS)
-                    passwords.forEach { password ->
+                    sortedPasswords.forEach { password ->
                         val categoryName = categoryMap[password.categoryId] ?: CsvValidator.UNCATEGORIZED
                         add(
                             listOf(
@@ -213,11 +223,13 @@ class SettingsViewModel @Inject constructor(
                 val categoryIdByName = withContext(Dispatchers.IO) {
                     val categories = categoryRepository.getAllCategories().first().toMutableList()
                     val map = categories.associate { it.name.lowercase() to it.id }.toMutableMap()
+                    var nextSortOrder = categories.size
                     result.newCategoryNames.forEach { name ->
                         val key = name.lowercase()
                         if (!map.containsKey(key)) {
-                            val newId = categoryRepository.insertCategory(name, (0..5).random())
+                            val newId = categoryRepository.insertCategory(name, (0..5).random(), nextSortOrder)
                             map[key] = newId
+                            nextSortOrder++
                         }
                     }
                     map
@@ -276,6 +288,7 @@ class SettingsViewModel @Inject constructor(
 
     private fun ValidatedPasswordRow.toImportData(categoryId: Long): PasswordImportData {
         return PasswordImportData(
+            uuid = existingUuid,
             title = title,
             username = username,
             password = password,

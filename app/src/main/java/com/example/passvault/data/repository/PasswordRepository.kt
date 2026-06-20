@@ -78,6 +78,7 @@ class PasswordRepository @Inject constructor(
             val resolvedStrength = if (data.strength > 0) data.strength
             else calculatePasswordStrength(data.password)
             PasswordEntry(
+                uuid = data.uuid ?: java.util.UUID.randomUUID().toString(),
                 title = data.title,
                 username = data.username,
                 encryptedPassword = encryptedData.ciphertext,
@@ -348,6 +349,7 @@ data class PasswordStatistics(
 )
 
 data class PasswordImportData(
+    val uuid: String? = null,
     val title: String,
     val username: String,
     val password: String,

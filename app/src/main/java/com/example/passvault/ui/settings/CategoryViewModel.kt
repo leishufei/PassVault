@@ -7,6 +7,7 @@ import com.example.passvault.data.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,9 +24,26 @@ class CategoryViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
+    init {
+        repairCategorySortOrderIfNeeded()
+    }
+
+    private fun repairCategorySortOrderIfNeeded() {
+        viewModelScope.launch {
+            val categoriesList = categoryRepository.getAllCategories().first()
+            val zeroSortOrderCount = categoriesList.count { it.sortOrder == 0 }
+            if (zeroSortOrderCount > 1) {
+                categoriesList.forEachIndexed { index, category ->
+                    categoryRepository.updateCategorySortOrder(category.id, index)
+                }
+            }
+        }
+    }
+
     fun addCategory(name: String, color: Int) {
         viewModelScope.launch {
-            categoryRepository.insertCategory(name, color)
+            val sortOrder = categories.value.size
+            categoryRepository.insertCategory(name, color, sortOrder)
         }
     }
 

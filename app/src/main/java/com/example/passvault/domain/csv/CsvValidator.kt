@@ -107,7 +107,20 @@ class CsvValidator {
             }
 
             val existing = when (format) {
-                CsvFormat.EXTENDED -> parsed.uuid?.takeIf { it.isNotEmpty() }?.let { byUuid[it] }
+                CsvFormat.EXTENDED -> {
+                    val byUuidMatch = parsed.uuid?.takeIf { it.isNotEmpty() }?.let { uuid ->
+                        byUuid[uuid].also {
+                            if (it == null) {
+                                android.util.Log.w("CsvValidator", "UUID not found in DB: $uuid for title=${parsed.title}")
+                            }
+                        }
+                    }
+                    val fallbackMatch = byTitleUser["${parsed.title.lowercase()}|${parsed.username.lowercase()}"]
+                    if (byUuidMatch == null && fallbackMatch != null) {
+                        android.util.Log.i("CsvValidator", "Fallback match for title=${parsed.title}, uuid=${parsed.uuid}")
+                    }
+                    byUuidMatch ?: fallbackMatch
+                }
                 CsvFormat.LEGACY -> byTitleUser["${parsed.title.lowercase()}|${parsed.username.lowercase()}"]
                 CsvFormat.UNKNOWN -> null
             }
@@ -142,7 +155,8 @@ class CsvValidator {
                     password = parsed.password,
                     website = parsed.website,
                     notes = parsed.notes,
-                    categoryName = categoryNameNormalized
+                    categoryName = categoryNameNormalized,
+                    existingUuid = parsed.uuid
                 )
             }
             validRows.add(row)
