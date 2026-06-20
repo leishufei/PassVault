@@ -126,7 +126,8 @@ class SyncManager @Inject constructor(
             // 1. 构建本地数据快照（含已删除记录）
             val localPasswords = passwordDao.getAllPasswordsIncludingDeleted()
             val localCategories = categoryDao.getAllCategoriesIncludingDeleted()
-            val categoryIdToUuid = localCategories.associate { it.id to it.uuid }
+            val categoryIdToUuid = localCategories.associate { it.id to it.uuid }.toMutableMap()
+            categoryIdToUuid[0L] = "" // 未分类的特殊映射
             Log.d("SyncV2", "本地: ${localPasswords.size} 条密码, ${localCategories.size} 个分类")
 
             // 2. 下载云端数据（带版本标识）
@@ -146,7 +147,8 @@ class SyncManager @Inject constructor(
             // 写入本地 DB 并重建映射
             applyCategoryMerge(mergedCategories)
             val updatedCategories = categoryDao.getAllCategoriesIncludingDeleted()
-            val newCategoryUuidToId = updatedCategories.associate { it.uuid to it.id }
+            val newCategoryUuidToId = updatedCategories.associate { it.uuid to it.id }.toMutableMap()
+            newCategoryUuidToId[""] = 0L // 未分类的特殊映射
 
             // 4. 合并密码
             val localPwItems = localPasswords.map { it.toPasswordSyncItem(categoryIdToUuid) }

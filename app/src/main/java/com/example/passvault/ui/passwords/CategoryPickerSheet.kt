@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.example.passvault.data.model.Category
+import com.example.passvault.ui.theme.CategoryConstants
 import com.example.passvault.ui.theme.safeCategoryColor
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,7 +68,14 @@ fun CategoryPickerSheet(
                 modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 12.dp)
             )
 
-            categories.forEach { category ->
+            CategoryPickerRow(
+                color = CategoryConstants.UNCATEGORIZED_COLOR,
+                name = CategoryConstants.UNCATEGORIZED_NAME,
+                selected = currentCategoryId == CategoryConstants.UNCATEGORIZED_ID,
+                onClick = { onPick(CategoryConstants.UNCATEGORIZED_ID); onDismiss() }
+            )
+
+            categories.filter { it.id != CategoryConstants.UNCATEGORIZED_ID }.forEach { category ->
                 CategoryPickerRow(
                     color = safeCategoryColor(category.color),
                     name = category.name,

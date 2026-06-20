@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.passvault.domain.generator.PasswordConfig
 import com.example.passvault.ui.theme.CategoryColors
+import com.example.passvault.ui.theme.CategoryConstants
 import com.example.passvault.ui.theme.SemanticError
 import com.example.passvault.ui.theme.SemanticSuccess
 import com.example.passvault.ui.theme.SemanticWarning
@@ -377,9 +378,14 @@ fun PasswordDetailScreen(
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (selectedCategory != null) {
+                            val displayColor = if (selectedCategory.color == -1) {
+                                CategoryConstants.UNCATEGORIZED_COLOR
+                            } else {
+                                safeCategoryColor(selectedCategory.color)
+                            }
                             Box(
                                 modifier = Modifier.size(8.dp).clip(CircleShape)
-                                    .background(safeCategoryColor(selectedCategory.color))
+                                    .background(displayColor)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(selectedCategory.name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
@@ -887,7 +893,12 @@ fun CategorySelectionField(
         Spacer(modifier = Modifier.height(6.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (selectedCategory != null) {
-                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(safeCategoryColor(selectedCategory.color)))
+                val displayColor = if (selectedCategory.color == -1) {
+                    CategoryConstants.UNCATEGORIZED_COLOR
+                } else {
+                    safeCategoryColor(selectedCategory.color)
+                }
+                Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(displayColor))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(selectedCategory.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
             } else {
@@ -895,7 +906,17 @@ fun CategorySelectionField(
             }
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, shape = MaterialTheme.shapes.medium, containerColor = MaterialTheme.colorScheme.surface) {
-            categories.forEach { category ->
+            DropdownMenuItem(
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(CategoryConstants.UNCATEGORIZED_COLOR))
+                        Spacer(Modifier.width(8.dp))
+                        Text(CategoryConstants.UNCATEGORIZED_NAME, style = MaterialTheme.typography.bodyMedium)
+                    }
+                },
+                onClick = { onCategorySelected(CategoryConstants.UNCATEGORIZED_ID); expanded = false }
+            )
+            categories.filter { it.id != CategoryConstants.UNCATEGORIZED_ID }.forEach { category ->
                 DropdownMenuItem(
                     text = { Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(safeCategoryColor(category.color))); Spacer(Modifier.width(8.dp)); Text(category.name, style = MaterialTheme.typography.bodyMedium) } },
                     onClick = { onCategorySelected(category.id); expanded = false }

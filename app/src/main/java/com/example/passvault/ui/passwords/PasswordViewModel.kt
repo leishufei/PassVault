@@ -9,6 +9,7 @@ import com.example.passvault.data.repository.PasswordEntryDisplay
 import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.data.repository.PasswordRepository
 import com.example.passvault.data.security.MasterPasswordManager
+import com.example.passvault.ui.theme.CategoryConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import com.example.passvault.domain.generator.PasswordConfig
@@ -69,6 +70,16 @@ class PasswordViewModel @Inject constructor(
     private val _rawPasswords = MutableStateFlow<List<PasswordEntryListItem>>(emptyList())
 
     val categories: StateFlow<List<Category>> = categoryRepository.getAllCategories()
+        .map { dbCategories ->
+            val uncategorized = Category(
+                id = CategoryConstants.UNCATEGORIZED_ID,
+                name = CategoryConstants.UNCATEGORIZED_NAME,
+                color = -1,
+                isDefault = true,
+                sortOrder = -1
+            )
+            listOf(uncategorized) + dbCategories
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -77,7 +88,6 @@ class PasswordViewModel @Inject constructor(
 
     val categoryCounts: StateFlow<Map<Long, Int>> = _rawPasswords.map { passwords ->
         val counts = mutableMapOf<Long, Int>()
-        counts[0L] = passwords.size // 0L represents ALL
         passwords.forEach { pw ->
             counts[pw.categoryId] = (counts[pw.categoryId] ?: 0) + 1
         }
@@ -107,10 +117,7 @@ class PasswordViewModel @Inject constructor(
         filtered = when (filter) {
             PasswordFilter.FAVORITES -> filtered.filter { it.isFavorite }
             PasswordFilter.RECENT -> filtered.sortedByDescending { it.lastUsedAt }
-            is PasswordFilter.CATEGORY -> {
-                if (filter.categoryId == 0L) filtered
-                else filtered.filter { it.categoryId == filter.categoryId }
-            }
+            is PasswordFilter.CATEGORY -> filtered.filter { it.categoryId == filter.categoryId }
         }
 
         if (filter != PasswordFilter.RECENT) {

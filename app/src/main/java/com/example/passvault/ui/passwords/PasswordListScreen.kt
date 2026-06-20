@@ -86,6 +86,7 @@ import android.widget.Toast
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.passvault.data.repository.PasswordEntryListItem
+import com.example.passvault.ui.theme.CategoryConstants
 import com.example.passvault.ui.theme.SemanticWarning
 import com.example.passvault.ui.theme.safeCategoryColor
 import kotlin.math.abs
@@ -344,14 +345,14 @@ fun PasswordListScreen(
                     }
                 ) {
                     CategoryChip(
-                        label = "全部",
+                        label = CategoryConstants.UNCATEGORIZED_NAME,
                         count = categoryCounts[0L] ?: 0,
-                        color = null,
+                        color = CategoryConstants.UNCATEGORIZED_COLOR,
                         selected = filterMode is PasswordFilter.CATEGORY
                             && (filterMode as PasswordFilter.CATEGORY).categoryId == 0L,
                         onClick = { viewModel.setFilter(PasswordFilter.CATEGORY(0L)) }
                     )
-                    categories.forEach { category ->
+                    categories.filter { it.id != CategoryConstants.UNCATEGORIZED_ID }.forEach { category ->
                         CategoryChip(
                             label = category.name,
                             count = categoryCounts[category.id] ?: 0,
