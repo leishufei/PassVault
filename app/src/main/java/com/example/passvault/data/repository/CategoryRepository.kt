@@ -69,6 +69,21 @@ class CategoryRepository @Inject constructor(
         }
     }
 
+    suspend fun dedupByName() {
+        val now = System.currentTimeMillis()
+        val all = categoryDao.getAllCategoriesIncludingDeleted()
+            .filter { !it.isDeleted && !it.isDefault && it.id != 0L }
+        val grouped = all.groupBy { it.name.trim().lowercase() }
+        grouped.values.filter { it.size > 1 }.forEach { dups ->
+            val winner = dups.minByOrNull { it.createdAt } ?: return@forEach
+            val losers = dups.filter { it.id != winner.id }
+            losers.forEach { loser ->
+                passwordDao.bulkMigrateCategory(loser.id, winner.id, now)
+                categoryDao.logicalDeleteCategory(loser.id, now)
+            }
+        }
+    }
+
     suspend fun initializeDefaultCategories() {
         val allCategories = categoryDao.getAllCategories().first()
         val defaultCategories = allCategories.filter { it.isDefault }

@@ -235,10 +235,16 @@ class SettingsViewModel @Inject constructor(
                                     notes = row.notes,
                                     categoryId = categoryId
                                 )
-                                if (ok) updated++ else pendingInserts.add(row.toImportData(categoryId))
+                                if (ok) updated++ else {
+                                    if (!passwordRepository.checkDuplicate(row.title, row.username)) {
+                                        pendingInserts.add(row.toImportData(categoryId))
+                                    }
+                                }
                             }
                             ImportAction.INSERT -> {
-                                pendingInserts.add(row.toImportData(categoryId))
+                                if (!passwordRepository.checkDuplicate(row.title, row.username)) {
+                                    pendingInserts.add(row.toImportData(categoryId))
+                                }
                             }
                         }
                     }

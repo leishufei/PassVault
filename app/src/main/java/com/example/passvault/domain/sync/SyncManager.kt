@@ -23,6 +23,7 @@ import javax.inject.Singleton
 class SyncManager @Inject constructor(
     private val passwordDao: PasswordDao,
     private val categoryDao: CategoryDao,
+    private val categoryRepository: CategoryRepository,
     private val cryptoManager: CryptoManager,
     private val cloudCryptoManager: CloudCryptoManager,
     private val sessionManager: SessionManager
@@ -162,14 +163,26 @@ class SyncManager @Inject constructor(
 
             // 写入本地 DB
             applyPasswordMerge(mergedPasswords, newCategoryUuidToId)
-            Log.d("SyncV2", "合并结果: ${mergedPasswords.size} 条密码, ${mergedCategories.size} 个分类")
+
+            // 4.5. 同名分类去重：将 loser 下的密码迁移至 winner，逻辑删除 loser
+            categoryRepository.dedupByName()
+            val dedupedCategories = categoryDao.getAllCategoriesIncludingDeleted()
+            val dedupedPasswords = passwordDao.getAllPasswordsIncludingDeleted()
+            val dedupCatChanged = dedupedCategories.size != updatedCategories.size ||
+                dedupedCategories.any { c -> c.isDeleted && updatedCategories.firstOrNull { it.uuid == c.uuid }?.isDeleted == false }
+            val dedupedCatIdToUuid = dedupedCategories.associate { it.id to it.uuid }.toMutableMap()
+            dedupedCatIdToUuid[0L] = ""
+            val finalCategories = dedupedCategories.map { it.toCategorySyncItem() }
+            val finalPasswords = dedupedPasswords.map { it.toPasswordSyncItem(dedupedCatIdToUuid) }
+
+            Log.d("SyncV2", "合并结果: ${finalPasswords.size} 条密码, ${finalCategories.size} 个分类")
 
             // 5. 上传（乐观锁）
-            val needUpload = catChanged || pwChanged || cloudPayload == null
+            val needUpload = catChanged || pwChanged || dedupCatChanged || cloudPayload == null
             if (needUpload) {
                 val payload = SyncPayloadV2(
-                    passwords = mergedPasswords,
-                    categories = mergedCategories
+                    passwords = finalPasswords,
+                    categories = finalCategories
                 )
                 encryptAndUpload(provider, remoteFileName, masterPassword, payload)
                 Log.d("SyncV2", "已上传合并后的数据")
@@ -363,6 +376,14 @@ class SyncManager @Inject constructor(
         mergedPasswords.forEach { syncPw ->
             val categoryId = categoryUuidToId[syncPw.categoryUuid] ?: 0L
             val existing = passwordDao.getPasswordByUuid(syncPw.uuid)
+
+            if (existing == null && !syncPw.isDeleted &&
+                (syncPw.title.isNotEmpty() || syncPw.username.isNotEmpty()) &&
+                passwordDao.countDuplicate(syncPw.title, syncPw.username, 0L) > 0) {
+                Log.d("SyncV2", "Skip duplicate insert: ${syncPw.title}/${syncPw.username}")
+                return@forEach
+            }
+
             val encryptedData = cryptoManager.encrypt(syncPw.password)
 
             val entry = PasswordEntry(

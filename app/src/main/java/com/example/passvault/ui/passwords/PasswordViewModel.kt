@@ -143,6 +143,9 @@ class PasswordViewModel @Inject constructor(
 
     init {
         loadPasswords()
+        viewModelScope.launch {
+            categoryRepository.dedupByName()
+        }
     }
 
     fun setCategory(categoryId: Long) {

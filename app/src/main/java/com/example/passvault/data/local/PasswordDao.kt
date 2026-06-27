@@ -66,11 +66,14 @@ interface PasswordDao {
     @Query("SELECT id FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0")
     suspend fun getPasswordIdsByCategory(categoryId: Long): List<Long>
 
-    @Query("SELECT COUNT(*) FROM password_entries WHERE title = :title AND username = :username AND isDeleted = 0 AND id != :excludeId")
+    @Query("SELECT COUNT(*) FROM password_entries WHERE title = :title AND username = :username AND (title != '' OR username != '') AND isDeleted = 0 AND id != :excludeId")
     suspend fun countDuplicate(title: String, username: String, excludeId: Long): Int
 
     @Query("UPDATE password_entries SET categoryId = :newCategoryId WHERE categoryId = :oldCategoryId")
     suspend fun updatePasswordsCategory(oldCategoryId: Long, newCategoryId: Long)
+
+    @Query("UPDATE password_entries SET categoryId = :newCategoryId, updatedAt = :timestamp WHERE categoryId = :oldCategoryId AND isDeleted = 0")
+    suspend fun bulkMigrateCategory(oldCategoryId: Long, newCategoryId: Long, timestamp: Long)
 
     @Query("UPDATE password_entries SET isDeleted = 1, updatedAt = :timestamp WHERE id IN (:ids)")
     suspend fun bulkLogicalDelete(ids: List<Long>, timestamp: Long)
