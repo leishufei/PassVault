@@ -44,9 +44,6 @@ class SettingsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
-    private val _shouldLockNow = MutableStateFlow(false)
-    val shouldLockNow: StateFlow<Boolean> = _shouldLockNow.asStateFlow()
-
     private val _importProgress = MutableStateFlow<ImportProgress>(ImportProgress.Idle)
     val importProgress: StateFlow<ImportProgress> = _importProgress.asStateFlow()
 
@@ -60,11 +57,9 @@ class SettingsViewModel @Inject constructor(
     private fun loadSettings() {
         viewModelScope.launch {
             val biometricEnabled = authManager.isBiometricEnabled()
-            val autoLockTime = masterPasswordManager.getAutoLockTime()
             val passwordDefaultVisible = masterPasswordManager.getPasswordDefaultVisible()
             _uiState.value = _uiState.value.copy(
                 biometricEnabled = biometricEnabled,
-                autoLockTime = autoLockTime,
                 passwordDefaultVisible = passwordDefaultVisible
             )
         }
@@ -103,20 +98,6 @@ class SettingsViewModel @Inject constructor(
     fun setPasswordDefaultVisible(visible: Boolean) {
         masterPasswordManager.setPasswordDefaultVisible(visible)
         _uiState.value = _uiState.value.copy(passwordDefaultVisible = visible)
-    }
-
-    fun setAutoLockTime(time: String) {
-        masterPasswordManager.setAutoLockTime(time)
-        _uiState.value = _uiState.value.copy(autoLockTime = time)
-
-        // 如果设置为"立即"，触发锁定
-        if (time == "立即") {
-            _shouldLockNow.value = true
-        }
-    }
-
-    fun resetLockNowFlag() {
-        _shouldLockNow.value = false
     }
 
     fun changeMasterPassword(oldPassword: String, newPassword: String): Result<Unit> {
@@ -345,7 +326,6 @@ class SettingsViewModel @Inject constructor(
 
 data class SettingsUiState(
     val biometricEnabled: Boolean = false,
-    val autoLockTime: String = "5分钟",
     val passwordDefaultVisible: Boolean = false,
     val passwordStats: PasswordStatistics? = null,
     val isSyncing: Boolean = false,

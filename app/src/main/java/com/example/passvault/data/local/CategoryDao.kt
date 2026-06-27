@@ -39,6 +39,9 @@ interface CategoryDao {
     @Query("SELECT COUNT(*) FROM categories WHERE isDeleted = 0")
     suspend fun getCategoryCount(): Int
 
+    @Query("UPDATE categories SET sortOrder = :sortOrder, updatedAt = :timestamp WHERE id = :id")
+    suspend fun updateSortOrder(id: Long, sortOrder: Int, timestamp: Long)
+
     @Query("UPDATE categories SET isDeleted = 1, updatedAt = :timestamp WHERE id = :id")
     suspend fun logicalDeleteCategory(id: Long, timestamp: Long)
 

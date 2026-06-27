@@ -12,6 +12,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -43,7 +45,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.FilterList
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
@@ -65,30 +66,40 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.AnnotatedString
 import android.widget.Toast
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.passvault.data.repository.PasswordEntryListItem
 import com.example.passvault.ui.theme.CategoryConstants
 import com.example.passvault.ui.theme.SemanticWarning
 import com.example.passvault.ui.theme.safeCategoryColor
+import kotlinx.coroutines.flow.drop
 import kotlin.math.abs
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -99,15 +110,16 @@ fun PasswordListScreen(
     onAddClick: () -> Unit
 ) {
     val passwords by viewModel.passwords.collectAsState()
-    val filterMode by viewModel.filterMode.collectAsState()
+    val selectedCategoryId by viewModel.selectedCategoryId.collectAsState()
+    val isFavoritesOnly by viewModel.isFavoritesOnly.collectAsState()
     val sortOrder by viewModel.sortOrder.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
+    val isSearchActive by viewModel.isSearchActive.collectAsState()
     val categories by viewModel.categories.collectAsState()
     val categoryCounts by viewModel.categoryCounts.collectAsState()
     val selectionMode by viewModel.selectionMode.collectAsState()
     val selectedIds by viewModel.selectedIds.collectAsState()
 
-    var isSearchActive by remember { mutableStateOf(false) }
     val searchFocusRequester = remember { FocusRequester() }
     var isFilterDropdownExpanded by remember { mutableStateOf(false) }
     var isCategoryExpanded by remember { mutableStateOf(false) }
@@ -116,22 +128,69 @@ fun PasswordListScreen(
     var singleDeleteTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
     var showCategoryPicker by remember { mutableStateOf(false) }
     var singleEditTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
+    var isCategoryEditMode by remember { mutableStateOf(false) }
+    var deleteCategoryTarget by remember { mutableStateOf<com.example.passvault.data.model.Category?>(null) }
     val listState = rememberSaveable(saver = LazyListState.Saver) {
         LazyListState()
     }
 
-    LaunchedEffect(filterMode, searchQuery, sortOrder) {
-        if (passwords.isNotEmpty()) {
-            listState.scrollToItem(0)
+    val chipPositions = remember { mutableStateMapOf<Long, Rect>() }
+    var draggingChipId by remember { mutableStateOf<Long?>(null) }
+    var chipDragOffset by remember { mutableStateOf(Offset.Zero) }
+    var workingCategoryOrder by remember { mutableStateOf<List<Long>>(emptyList()) }
+    LaunchedEffect(categories, isCategoryEditMode) {
+        val orderedFromDb = categories
+            .filter { it.id != CategoryConstants.UNCATEGORIZED_ID }
+            .map { it.id }
+        if (!isCategoryEditMode || workingCategoryOrder.isEmpty()) {
+            workingCategoryOrder = orderedFromDb
+        } else {
+            val currentSet = orderedFromDb.toSet()
+            val preserved = workingCategoryOrder.filter { it in currentSet }
+            val preservedSet = preserved.toSet()
+            val added = orderedFromDb.filter { it !in preservedSet }
+            workingCategoryOrder = preserved + added
         }
     }
 
-    LaunchedEffect(isSearchActive) {
-        if (isSearchActive) {
-            searchFocusRequester.requestFocus()
-        }
+    LaunchedEffect(Unit) {
+        snapshotFlow { selectedCategoryId }
+            .drop(1)
+            .collect {
+                if (passwords.isNotEmpty()) listState.scrollToItem(0)
+            }
     }
 
+    LaunchedEffect(Unit) {
+        snapshotFlow { isFavoritesOnly }
+            .drop(1)
+            .collect {
+                if (passwords.isNotEmpty()) listState.scrollToItem(0)
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { sortOrder }
+            .drop(1)
+            .collect {
+                if (passwords.isNotEmpty()) listState.scrollToItem(0)
+            }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow { isSearchActive }
+            .drop(1)
+            .collect { active ->
+                if (active && passwords.isNotEmpty()) listState.scrollToItem(0)
+            }
+    }
+
+    BackHandler(enabled = isSearchActive && !selectionMode && !isCategoryEditMode) {
+        viewModel.setSearchActive(false)
+    }
+    BackHandler(enabled = isCategoryEditMode && !selectionMode) {
+        isCategoryEditMode = false
+    }
     BackHandler(enabled = selectionMode) { viewModel.exitSelectionMode() }
 
     Box(
@@ -166,6 +225,9 @@ fun PasswordListScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         if (isSearchActive) {
+                            LaunchedEffect(Unit) {
+                                searchFocusRequester.requestFocus()
+                            }
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
@@ -213,8 +275,7 @@ fun PasswordListScreen(
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.clickable {
-                                    isSearchActive = false
-                                    viewModel.searchPasswords("")
+                                    viewModel.setSearchActive(false)
                                 }
                             )
                         } else {
@@ -229,7 +290,7 @@ fun PasswordListScreen(
                                         .size(36.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                                        .clickable { isSearchActive = true },
+                                        .clickable { viewModel.setSearchActive(true) },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
@@ -241,8 +302,7 @@ fun PasswordListScreen(
                                 }
 
                                 Box {
-                                    val isFilterActive = filterMode == PasswordFilter.FAVORITES
-                                        || filterMode == PasswordFilter.RECENT
+                                    val isFilterActive = isFavoritesOnly
                                     Box(
                                         modifier = Modifier
                                             .size(36.dp)
@@ -274,32 +334,11 @@ fun PasswordListScreen(
                                             leadingIcon = {
                                                 Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                                             },
-                                            trailingIcon = if (filterMode == PasswordFilter.FAVORITES) {{
+                                            trailingIcon = if (isFavoritesOnly) {{
                                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                             }} else null,
                                             onClick = {
-                                                if (filterMode == PasswordFilter.FAVORITES) {
-                                                    viewModel.clearTagFilter()
-                                                } else {
-                                                    viewModel.setFilter(PasswordFilter.FAVORITES)
-                                                }
-                                                isFilterDropdownExpanded = false
-                                            }
-                                        )
-                                        DropdownMenuItem(
-                                            text = { Text("近期使用", style = MaterialTheme.typography.bodyMedium) },
-                                            leadingIcon = {
-                                                Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp))
-                                            },
-                                            trailingIcon = if (filterMode == PasswordFilter.RECENT) {{
-                                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
-                                            }} else null,
-                                            onClick = {
-                                                if (filterMode == PasswordFilter.RECENT) {
-                                                    viewModel.clearTagFilter()
-                                                } else {
-                                                    viewModel.setFilter(PasswordFilter.RECENT)
-                                                }
+                                                viewModel.toggleFavorites()
                                                 isFilterDropdownExpanded = false
                                             }
                                         )
@@ -333,38 +372,142 @@ fun PasswordListScreen(
             }
 
             AnimatedVisibility(visible = !selectionMode) {
-                FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    maxLines = if (isCategoryExpanded) Int.MAX_VALUE else 2,
-                    overflow = FlowRowOverflow.expandIndicator {
-                        MoreChip(label = "更多", onClick = { isCategoryExpanded = true })
+                Column {
+                    if (isCategoryEditMode) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "长按拖动调整顺序",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "完成",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(50))
+                                    .clickable { isCategoryEditMode = false }
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                            )
+                        }
                     }
-                ) {
-                    CategoryChip(
-                        label = CategoryConstants.UNCATEGORIZED_NAME,
-                        count = categoryCounts[0L] ?: 0,
-                        color = CategoryConstants.UNCATEGORIZED_COLOR,
-                        selected = filterMode is PasswordFilter.CATEGORY
-                            && (filterMode as PasswordFilter.CATEGORY).categoryId == 0L,
-                        onClick = { viewModel.setFilter(PasswordFilter.CATEGORY(0L)) }
-                    )
-                    categories.filter { it.id != CategoryConstants.UNCATEGORIZED_ID }.forEach { category ->
+                    FlowRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        maxLines = if (isCategoryExpanded) Int.MAX_VALUE else 2,
+                        overflow = FlowRowOverflow.expandIndicator {
+                            MoreChip(label = "更多", onClick = { isCategoryExpanded = true })
+                        }
+                    ) {
                         CategoryChip(
-                            label = category.name,
-                            count = categoryCounts[category.id] ?: 0,
-                            color = safeCategoryColor(category.color),
-                            selected = filterMode is PasswordFilter.CATEGORY
-                                && (filterMode as PasswordFilter.CATEGORY).categoryId == category.id,
-                            onClick = { viewModel.setFilter(PasswordFilter.CATEGORY(category.id)) }
+                            label = CategoryConstants.UNCATEGORIZED_NAME,
+                            count = categoryCounts[0L] ?: 0,
+                            color = CategoryConstants.UNCATEGORIZED_COLOR,
+                            selected = selectedCategoryId == 0L,
+                            editMode = isCategoryEditMode,
+                            deletable = false,
+                            onClick = {
+                                if (!isCategoryEditMode) {
+                                    viewModel.setCategory(0L)
+                                }
+                            },
+                            onLongClick = { isCategoryEditMode = !isCategoryEditMode },
+                            onDelete = {}
                         )
-                    }
-                    AddCategoryChip(onClick = { showAddCategoryDialog = true })
-                    if (isCategoryExpanded) {
-                        MoreChip(label = "收起", onClick = { isCategoryExpanded = false })
+                        val categoryById = remember(categories) { categories.associateBy { it.id } }
+                        val orderedCategories = if (isCategoryEditMode) {
+                            workingCategoryOrder.mapNotNull { categoryById[it] }
+                        } else {
+                            categories.filter { it.id != CategoryConstants.UNCATEGORIZED_ID }
+                        }
+                        orderedCategories.forEach { category ->
+                            val dragModifier = if (isCategoryEditMode) {
+                                Modifier
+                                    .onGloballyPositioned { coords ->
+                                        if (draggingChipId != category.id) {
+                                            chipPositions[category.id] = coords.boundsInWindow()
+                                        }
+                                    }
+                                    .zIndex(if (draggingChipId == category.id) 10f else 0f)
+                                    .offset {
+                                        if (draggingChipId == category.id) {
+                                            IntOffset(
+                                                chipDragOffset.x.toInt(),
+                                                chipDragOffset.y.toInt()
+                                            )
+                                        } else IntOffset.Zero
+                                    }
+                                    .pointerInput(category.id, isCategoryEditMode) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = {
+                                                draggingChipId = category.id
+                                                chipDragOffset = Offset.Zero
+                                            },
+                                            onDrag = { _, delta ->
+                                                chipDragOffset += delta
+                                            },
+                                            onDragEnd = {
+                                                val sourceRect = chipPositions[category.id]
+                                                val draggedId = draggingChipId
+                                                if (sourceRect != null && draggedId != null) {
+                                                    val draggedCenter = sourceRect.center + chipDragOffset
+                                                    val targetEntry = chipPositions.entries
+                                                        .firstOrNull { (id, rect) ->
+                                                            id != draggedId && rect.contains(draggedCenter)
+                                                        }
+                                                    val targetId = targetEntry?.key
+                                                    if (targetId != null) {
+                                                        val current = workingCategoryOrder.toMutableList()
+                                                        val from = current.indexOf(draggedId)
+                                                        val to = current.indexOf(targetId)
+                                                        if (from != -1 && to != -1 && from != to) {
+                                                            current.removeAt(from)
+                                                            current.add(to, draggedId)
+                                                            workingCategoryOrder = current
+                                                            viewModel.reorderCategories(current)
+                                                        }
+                                                    }
+                                                }
+                                                draggingChipId = null
+                                                chipDragOffset = Offset.Zero
+                                            },
+                                            onDragCancel = {
+                                                draggingChipId = null
+                                                chipDragOffset = Offset.Zero
+                                            }
+                                        )
+                                    }
+                            } else Modifier
+                            CategoryChip(
+                                modifier = dragModifier,
+                                label = category.name,
+                                count = categoryCounts[category.id] ?: 0,
+                                color = safeCategoryColor(category.color),
+                                selected = selectedCategoryId == category.id,
+                                editMode = isCategoryEditMode,
+                                deletable = true,
+                                onClick = {
+                                    if (!isCategoryEditMode) {
+                                        viewModel.setCategory(category.id)
+                                    }
+                                },
+                                onLongClick = { isCategoryEditMode = !isCategoryEditMode },
+                                onDelete = { deleteCategoryTarget = category }
+                            )
+                        }
+                        AddCategoryChip(onClick = { showAddCategoryDialog = true })
+                        if (isCategoryExpanded) {
+                            MoreChip(label = "收起", onClick = { isCategoryExpanded = false })
+                        }
                     }
                 }
             }
@@ -404,7 +547,6 @@ fun PasswordListScreen(
                                 if (selectionMode) {
                                     viewModel.toggleSelection(password.id)
                                 } else {
-                                    viewModel.markAsUsed(password.id)
                                     onPasswordClick(password.id)
                                 }
                             }
@@ -421,16 +563,14 @@ fun PasswordListScreen(
                             { onCopied: (String) -> Unit ->
                                 viewModel.decryptPassword(password.id) { decrypted ->
                                     onCopied(decrypted)
-                                    viewModel.markAsUsed(password.id)
                                 }
                             }
                         }
                         val onCopyUsername = remember(password.id) {
-                            { viewModel.markAsUsed(password.id) }
+                            { }
                         }
                         val onMoveCategory = remember(password.id) {
                             {
-                                viewModel.markAsUsed(password.id)
                                 singleEditTarget = password
                                 showCategoryPicker = true
                             }
@@ -595,6 +735,55 @@ fun PasswordListScreen(
             }
         )
     }
+
+    deleteCategoryTarget?.let { target ->
+        val passwordCount = categoryCounts[target.id] ?: 0
+        AlertDialog(
+            onDismissRequest = { deleteCategoryTarget = null },
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "删除分类",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                val message = if (passwordCount > 0) {
+                    "确定删除分类「${target.name}」吗？该分类下的 $passwordCount 个密码也将被删除，此操作无法撤销。"
+                } else {
+                    "确定删除分类「${target.name}」吗？"
+                }
+                Text(
+                    message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteCategory(target.id)
+                    deleteCategoryTarget = null
+                }) {
+                    Text(
+                        "删除",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteCategoryTarget = null }) {
+                    Text(
+                        "取消",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -683,44 +872,82 @@ private fun TopBarIconButton(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CategoryChip(
     label: String,
     count: Int,
     color: Color?,
     selected: Boolean,
-    onClick: () -> Unit
+    editMode: Boolean = false,
+    deletable: Boolean = true,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(
-                if (selected) MaterialTheme.colorScheme.primaryContainer
-                else MaterialTheme.colorScheme.surfaceVariant
-            )
-            .clickable {
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                onClick()
+    Box(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(
+                    if (selected) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant
+                )
+                .combinedClickable(
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onClick()
+                    },
+                    onLongClick = if (editMode) null else {
+                        {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onLongClick()
+                        }
+                    }
+                )
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            if (color != null) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                )
             }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        if (color != null) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
+            Text(
+                text = "$label ($count)",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (selected) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Text(
-            text = "$label ($count)",
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        if (editMode && deletable) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 4.dp, y = (-4).dp)
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.error)
+                    .clickable {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        onDelete()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Delete category",
+                    tint = MaterialTheme.colorScheme.onError,
+                    modifier = Modifier.size(12.dp)
+                )
+            }
+        }
     }
 }
 

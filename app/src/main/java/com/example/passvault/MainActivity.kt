@@ -28,17 +28,10 @@ import com.example.passvault.ui.passwords.PasswordViewModel
 import com.example.passvault.ui.settings.CategoryManagementScreen
 import com.example.passvault.ui.settings.CategoryViewModel
 import com.example.passvault.ui.theme.PassVaultTheme
-import com.example.passvault.domain.auth.AuthManager
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : FragmentActivity() {
-
-    @Inject
-    lateinit var authManager: AuthManager
-
-    private var lastActiveTime: Long = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,18 +45,6 @@ class MainActivity : FragmentActivity() {
                     PassVaultAppContent()
                 }
             }
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        lastActiveTime = System.currentTimeMillis()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (lastActiveTime > 0 && authManager.shouldAutoLock(lastActiveTime)) {
-            recreate()
         }
     }
 }
@@ -132,17 +113,23 @@ fun PassVaultAppContent() {
         }
 
         composable(
-            route = "password_detail/{passwordId}",
+            route = "password_detail/{passwordId}?categoryId={categoryId}",
             arguments = listOf(
-                navArgument("passwordId") { type = NavType.StringType }
+                navArgument("passwordId") { type = NavType.StringType },
+                navArgument("categoryId") {
+                    type = NavType.LongType
+                    defaultValue = 0L
+                }
             )
         ) { backStackEntry ->
             val passwordViewModel: PasswordViewModel = hiltViewModel()
             val passwordIdStr = backStackEntry.arguments?.getString("passwordId")
             val passwordId = if (passwordIdStr == "new") null else passwordIdStr?.toLongOrNull()
+            val defaultCategoryId = backStackEntry.arguments?.getLong("categoryId") ?: 0L
 
             PasswordDetailScreen(
                 passwordId = passwordId,
+                defaultCategoryId = defaultCategoryId,
                 viewModel = passwordViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onPasswordSaved = { navController.popBackStack() }

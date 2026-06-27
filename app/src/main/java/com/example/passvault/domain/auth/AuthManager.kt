@@ -100,24 +100,6 @@ class AuthManager @Inject constructor(
         biometricPrompt.authenticate(promptInfo)
     }
 
-    fun shouldAutoLock(lastActiveTime: Long): Boolean {
-        val autoLockTime = masterPasswordManager.getAutoLockTime()
-        if (autoLockTime == "从不") {
-            return false
-        }
-
-        val timeoutMillis = when (autoLockTime) {
-            "立即" -> 0L
-            "1分钟" -> 60_000L
-            "5分钟" -> 300_000L
-            "15分钟" -> 900_000L
-            else -> 300_000L
-        }
-
-        val elapsedTime = System.currentTimeMillis() - lastActiveTime
-        return elapsedTime >= timeoutMillis
-    }
-
     fun clearSession() {
         sessionManager.onLock()
     }

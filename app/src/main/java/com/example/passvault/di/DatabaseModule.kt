@@ -29,7 +29,8 @@ object DatabaseModule {
             .addMigrations(
                 PasswordDatabase.MIGRATION_4_5,
                 PasswordDatabase.MIGRATION_5_6,
-                PasswordDatabase.MIGRATION_6_7
+                PasswordDatabase.MIGRATION_6_7,
+                PasswordDatabase.MIGRATION_7_8
             )
             .build()
     }

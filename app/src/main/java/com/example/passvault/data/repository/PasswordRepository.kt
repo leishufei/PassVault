@@ -96,7 +96,7 @@ class PasswordRepository @Inject constructor(
 
     /**
      * Updates an existing password identified by [id], preserving non-CSV fields
-     * (isFavorite, lastUsedAt, appPackageName, iconColor, createdAt, uuid).
+     * (isFavorite, appPackageName, iconColor, createdAt, uuid).
      * Returns true if the entry existed and was updated.
      */
     suspend fun updatePasswordFromImport(
@@ -164,10 +164,6 @@ class PasswordRepository @Inject constructor(
         passwordDao.updateFavoriteStatus(id, isFavorite)
     }
 
-    suspend fun updateLastUsed(id: Long) {
-        passwordDao.updateLastUsed(id, System.currentTimeMillis())
-    }
-
     suspend fun deletePassword(id: Long) {
         passwordDao.logicalDelete(id, System.currentTimeMillis())
     }
@@ -222,7 +218,6 @@ class PasswordRepository @Inject constructor(
             appPackageName = appPackageName,
             notes = notes,
             isFavorite = isFavorite,
-            lastUsedAt = lastUsedAt,
             iconColor = iconColor,
             strength = strength,
             categoryId = categoryId,
@@ -240,7 +235,6 @@ class PasswordRepository @Inject constructor(
             website = website,
             appPackageName = appPackageName,
             isFavorite = isFavorite,
-            lastUsedAt = lastUsedAt,
             iconColor = iconColor,
             strength = strength,
             categoryId = categoryId,
@@ -315,7 +309,6 @@ data class PasswordEntryDisplay(
     val appPackageName: String,
     val notes: String,
     val isFavorite: Boolean,
-    val lastUsedAt: Long,
     val iconColor: Int,
     val strength: Int,
     val categoryId: Long,
@@ -332,7 +325,6 @@ data class PasswordEntryListItem(
     val website: String,
     val appPackageName: String,
     val isFavorite: Boolean,
-    val lastUsedAt: Long,
     val iconColor: Int,
     val strength: Int,
     val categoryId: Long,

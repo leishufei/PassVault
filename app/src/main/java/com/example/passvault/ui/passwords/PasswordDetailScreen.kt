@@ -91,7 +91,8 @@ fun PasswordDetailScreen(
     passwordId: Long?,
     viewModel: PasswordViewModel,
     onNavigateBack: () -> Unit,
-    onPasswordSaved: () -> Unit
+    onPasswordSaved: () -> Unit,
+    defaultCategoryId: Long = 0L
 ) {
     var title by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -100,7 +101,7 @@ fun PasswordDetailScreen(
     var notes by remember { mutableStateOf("") }
     var isFavorite by remember { mutableStateOf(false) }
     var iconColor by remember { mutableStateOf(0) }
-    var categoryId by remember { mutableStateOf(0L) }
+    var categoryId by remember { mutableStateOf(defaultCategoryId) }
     var createdAt by remember { mutableStateOf(0L) }
     var updatedAt by remember { mutableStateOf(0L) }
     var passwordVisible by remember(passwordId) { mutableStateOf(viewModel.getPasswordDefaultVisible()) }
@@ -399,7 +400,6 @@ fun PasswordDetailScreen(
                     )
                     FieldRow(label = "用户名", value = username, onCopy = {
                         clipboardManager.setText(AnnotatedString(username))
-                        passwordId?.let { viewModel.markAsUsed(it) }
                     })
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 12.dp),
@@ -411,7 +411,6 @@ fun PasswordDetailScreen(
                         onVisibilityToggle = { passwordVisible = !passwordVisible },
                         onCopy = {
                             clipboardManager.setText(AnnotatedString(password))
-                            passwordId?.let { viewModel.markAsUsed(it) }
                         }
                     )
                     if (website.isNotEmpty()) {

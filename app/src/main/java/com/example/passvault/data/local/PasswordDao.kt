@@ -24,10 +24,10 @@ interface PasswordDao {
     @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND (title LIKE '%' || :query || '%' OR username LIKE '%' || :query || '%' OR website LIKE '%' || :query || '%')")
     fun searchPasswords(query: String): Flow<List<PasswordEntry>>
 
-    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND website = :website ORDER BY lastUsedAt DESC")
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND website = :website ORDER BY updatedAt DESC")
     suspend fun findByWebsite(website: String): List<PasswordEntry>
 
-    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND appPackageName = :packageName ORDER BY lastUsedAt DESC")
+    @Query("SELECT * FROM password_entries WHERE isDeleted = 0 AND appPackageName = :packageName ORDER BY updatedAt DESC")
     suspend fun findByPackageName(packageName: String): List<PasswordEntry>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -41,9 +41,6 @@ interface PasswordDao {
 
     @Query("UPDATE password_entries SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun updateFavoriteStatus(id: Long, isFavorite: Boolean)
-
-    @Query("UPDATE password_entries SET lastUsedAt = :timestamp WHERE id = :id")
-    suspend fun updateLastUsed(id: Long, timestamp: Long)
 
     @Delete
     suspend fun deletePassword(entry: PasswordEntry)
@@ -65,6 +62,9 @@ interface PasswordDao {
 
     @Query("SELECT * FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0 ORDER BY createdAt DESC")
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntry>>
+
+    @Query("SELECT id FROM password_entries WHERE categoryId = :categoryId AND isDeleted = 0")
+    suspend fun getPasswordIdsByCategory(categoryId: Long): List<Long>
 
     @Query("SELECT COUNT(*) FROM password_entries WHERE title = :title AND username = :username AND isDeleted = 0 AND id != :excludeId")
     suspend fun countDuplicate(title: String, username: String, excludeId: Long): Int

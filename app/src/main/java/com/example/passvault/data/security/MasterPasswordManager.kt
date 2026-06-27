@@ -57,16 +57,6 @@ class MasterPasswordManager @Inject constructor(
             .apply()
     }
 
-    fun getAutoLockTime(): String {
-        return sharedPreferences.getString(KEY_AUTO_LOCK_TIME, "5分钟") ?: "5分钟"
-    }
-
-    fun setAutoLockTime(time: String) {
-        sharedPreferences.edit()
-            .putString(KEY_AUTO_LOCK_TIME, time)
-            .apply()
-    }
-
     fun getPasswordDefaultVisible(): Boolean {
         return sharedPreferences.getBoolean(KEY_PASSWORD_DEFAULT_VISIBLE, false)
     }
@@ -88,7 +78,6 @@ class MasterPasswordManager @Inject constructor(
         private const val KEY_MASTER_PASSWORD_HASH = "master_password_hash"
         private const val KEY_MASTER_PASSWORD_PLAINTEXT = "master_password_plaintext"
         private const val KEY_BIOMETRIC_ENABLED = "biometric_enabled"
-        private const val KEY_AUTO_LOCK_TIME = "auto_lock_time"
         private const val KEY_PASSWORD_DEFAULT_VISIBLE = "password_default_visible"
     }
 }

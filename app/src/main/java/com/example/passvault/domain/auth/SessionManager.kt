@@ -6,7 +6,7 @@ import javax.inject.Singleton
 @Singleton
 class SessionManager @Inject constructor() {
     // Keeps the master password in memory while the app is unlocked.
-    // Must be cleared when the app auto-locks or user logs out.
+    // Must be cleared when the user logs out.
     var currentMasterPassword: String? = null
         private set
 

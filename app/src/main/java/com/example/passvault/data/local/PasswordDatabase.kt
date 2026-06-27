@@ -9,7 +9,7 @@ import com.example.passvault.data.model.PasswordEntry
 
 @Database(
     entities = [PasswordEntry::class, Category::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class PasswordDatabase : RoomDatabase() {
@@ -66,6 +66,58 @@ abstract class PasswordDatabase : RoomDatabase() {
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE password_entries ADD COLUMN appPackageName TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    UPDATE password_entries SET isDeleted = 1, updatedAt = ${System.currentTimeMillis()}
+                    WHERE id NOT IN (
+                        SELECT MIN(id) FROM password_entries
+                        WHERE isDeleted = 0
+                        GROUP BY title, username
+                    )
+                    AND isDeleted = 0
+                    AND (title != '' OR username != '')
+                """.trimIndent())
+
+                db.execSQL("""
+                    CREATE TABLE password_entries_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        uuid TEXT NOT NULL DEFAULT '',
+                        title TEXT NOT NULL,
+                        username TEXT NOT NULL,
+                        encryptedPassword BLOB NOT NULL,
+                        passwordIv BLOB NOT NULL,
+                        website TEXT NOT NULL DEFAULT '',
+                        appPackageName TEXT NOT NULL DEFAULT '',
+                        notes TEXT NOT NULL DEFAULT '',
+                        isFavorite INTEGER NOT NULL DEFAULT 0,
+                        iconColor INTEGER NOT NULL DEFAULT 0,
+                        strength INTEGER NOT NULL DEFAULT 0,
+                        categoryId INTEGER NOT NULL DEFAULT 0,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        isDeleted INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+
+                db.execSQL("""
+                    INSERT INTO password_entries_new (
+                        id, uuid, title, username, encryptedPassword, passwordIv,
+                        website, appPackageName, notes, isFavorite, iconColor,
+                        strength, categoryId, createdAt, updatedAt, isDeleted
+                    )
+                    SELECT id, uuid, title, username, encryptedPassword, passwordIv,
+                           website, appPackageName, notes, isFavorite, iconColor,
+                           strength, categoryId, createdAt, updatedAt, isDeleted
+                    FROM password_entries
+                """.trimIndent())
+
+                db.execSQL("DROP TABLE password_entries")
+                db.execSQL("ALTER TABLE password_entries_new RENAME TO password_entries")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_password_entries_uuid ON password_entries(uuid)")
             }
         }
     }

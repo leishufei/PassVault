@@ -44,8 +44,12 @@ class CategoryRepository @Inject constructor(
         val category = categoryDao.getCategoryById(id)
         category?.let {
             if (!it.isDefault) {
-                passwordDao.updatePasswordsCategory(id, 0)
-                categoryDao.logicalDeleteCategory(id, System.currentTimeMillis())
+                val now = System.currentTimeMillis()
+                val passwordIds = passwordDao.getPasswordIdsByCategory(id)
+                if (passwordIds.isNotEmpty()) {
+                    passwordDao.bulkLogicalDelete(passwordIds, now)
+                }
+                categoryDao.logicalDeleteCategory(id, now)
             }
         }
     }
@@ -55,6 +59,13 @@ class CategoryRepository @Inject constructor(
         category?.let {
             val updated = it.copy(sortOrder = sortOrder)
             categoryDao.updateCategory(updated)
+        }
+    }
+
+    suspend fun updateCategorySortOrders(orderedIds: List<Long>) {
+        val now = System.currentTimeMillis()
+        orderedIds.forEachIndexed { index, id ->
+            categoryDao.updateSortOrder(id, index, now)
         }
     }
 

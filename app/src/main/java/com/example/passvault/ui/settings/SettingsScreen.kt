@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,22 +71,13 @@ import com.example.passvault.domain.csv.ImportProgress
 
 @Composable
 fun SettingsScreen(
-    onLock: () -> Unit,
     onNavigateToCategoryManagement: () -> Unit = {},
     onNavigateToAutofillSettings: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
-    val shouldLockNow by viewModel.shouldLockNow.collectAsState()
     val importProgress by viewModel.importProgress.collectAsState()
-
-    LaunchedEffect(shouldLockNow) {
-        if (shouldLockNow) {
-            viewModel.resetLockNowFlag()
-            onLock()
-        }
-    }
 
     LaunchedEffect(importProgress) {
         when (val state = importProgress) {
@@ -105,10 +95,7 @@ fun SettingsScreen(
     }
 
     var showSafeDialog by remember { mutableStateOf(false) }
-    var showAutoLockDialog by remember { mutableStateOf(false) }
     var showMasterPasswordDialog by remember { mutableStateOf(false) }
-
-    val autoLockOptions = listOf("立即", "1分钟", "5分钟", "10分钟", "永不")
 
     val timestampedFileName = remember {
         val dateFormat = SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault())
@@ -171,13 +158,6 @@ fun SettingsScreen(
                         viewModel.loadPasswordStatisticsIfNeeded()
                         showSafeDialog = true
                     }
-                )
-                SettingDivider()
-                SettingItem(
-                    icon = Icons.Default.Timer,
-                    title = "自动锁定",
-                    subtitle = uiState.autoLockTime,
-                    onClick = { showAutoLockDialog = true }
                 )
                 SettingDivider()
                 SettingItem(
@@ -319,38 +299,6 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Lock button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .clip(MaterialTheme.shapes.medium)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, MaterialTheme.shapes.medium)
-                    .clickable { onLock() },
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        "立即锁定",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -485,60 +433,6 @@ fun SettingsScreen(
     }
 
     // Auto lock dialog
-    if (showAutoLockDialog) {
-        AlertDialog(
-            onDismissRequest = { showAutoLockDialog = false },
-            title = {
-                Text(
-                    "自动锁定时间",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    autoLockOptions.forEach { option ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.medium)
-                                .background(
-                                    if (uiState.autoLockTime == option) MaterialTheme.colorScheme.surfaceVariant
-                                    else Color.Transparent
-                                )
-                                .clickable {
-                                    viewModel.setAutoLockTime(option)
-                                    showAutoLockDialog = false
-                                }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = option,
-                                color = if (uiState.autoLockTime == option) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (uiState.autoLockTime == option) FontWeight.SemiBold else FontWeight.Normal
-                            )
-                            if (uiState.autoLockTime == option) {
-                                Icon(
-                                    Icons.Default.Security,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = MaterialTheme.shapes.large
-        )
-    }
-
     // Master password dialog
     if (showMasterPasswordDialog) {
         var oldPassword by remember { mutableStateOf("") }

@@ -27,12 +27,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-sealed class PasswordFilter {
-    object FAVORITES : PasswordFilter()
-    object RECENT : PasswordFilter()
-    data class CATEGORY(val categoryId: Long) : PasswordFilter()
-}
-
 enum class SortOrder {
     CREATED_DESC,
     CREATED_ASC
@@ -55,8 +49,14 @@ class PasswordViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _filterMode = MutableStateFlow<PasswordFilter>(PasswordFilter.CATEGORY(lastSelectedCategoryId))
-    val filterMode: StateFlow<PasswordFilter> = _filterMode.asStateFlow()
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive.asStateFlow()
+
+    private val _selectedCategoryId = MutableStateFlow(lastSelectedCategoryId)
+    val selectedCategoryId: StateFlow<Long> = _selectedCategoryId.asStateFlow()
+
+    private val _isFavoritesOnly = MutableStateFlow(false)
+    val isFavoritesOnly: StateFlow<Boolean> = _isFavoritesOnly.asStateFlow()
 
     private val _sortOrder = MutableStateFlow(SortOrder.CREATED_DESC)
     val sortOrder: StateFlow<SortOrder> = _sortOrder.asStateFlow()
@@ -86,7 +86,32 @@ class PasswordViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    val categoryCounts: StateFlow<Map<Long, Int>> = _rawPasswords.map { passwords ->
+    private val searchAndFavoritesFiltered: StateFlow<List<PasswordEntryListItem>> = combine(
+        _rawPasswords,
+        _searchQuery,
+        _isFavoritesOnly
+    ) { passwords, query, favoritesOnly ->
+        var filtered = passwords
+        if (query.isNotEmpty()) {
+            filtered = filtered.filter {
+                it.title.contains(query, ignoreCase = true) ||
+                it.username.contains(query, ignoreCase = true) ||
+                it.website.contains(query, ignoreCase = true)
+            }
+        }
+        if (favoritesOnly) {
+            filtered = filtered.filter { it.isFavorite }
+        }
+        filtered
+    }
+    .distinctUntilChanged()
+    .stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    val categoryCounts: StateFlow<Map<Long, Int>> = searchAndFavoritesFiltered.map { passwords ->
         val counts = mutableMapOf<Long, Int>()
         passwords.forEach { pw ->
             counts[pw.categoryId] = (counts[pw.categoryId] ?: 0) + 1
@@ -99,34 +124,14 @@ class PasswordViewModel @Inject constructor(
     )
 
     val passwords: StateFlow<List<PasswordEntryListItem>> = combine(
-        _rawPasswords,
-        _searchQuery,
-        _filterMode,
+        searchAndFavoritesFiltered,
+        _selectedCategoryId,
         _sortOrder
-    ) { passwords, query, filter, sort ->
-        var filtered = passwords
-
-        if (query.isNotEmpty()) {
-            filtered = filtered.filter {
-                it.title.contains(query, ignoreCase = true) ||
-                it.username.contains(query, ignoreCase = true) ||
-                it.website.contains(query, ignoreCase = true)
-            }
-        }
-
-        filtered = when (filter) {
-            PasswordFilter.FAVORITES -> filtered.filter { it.isFavorite }
-            PasswordFilter.RECENT -> filtered.sortedByDescending { it.lastUsedAt }
-            is PasswordFilter.CATEGORY -> filtered.filter { it.categoryId == filter.categoryId }
-        }
-
-        if (filter != PasswordFilter.RECENT) {
-            when (sort) {
-                SortOrder.CREATED_DESC -> filtered.sortedByDescending { it.createdAt }
-                SortOrder.CREATED_ASC -> filtered.sortedBy { it.createdAt }
-            }
-        } else {
-            filtered
+    ) { passwords, categoryId, sort ->
+        val filtered = passwords.filter { it.categoryId == categoryId }
+        when (sort) {
+            SortOrder.CREATED_DESC -> filtered.sortedByDescending { it.createdAt }
+            SortOrder.CREATED_ASC -> filtered.sortedBy { it.createdAt }
         }
     }
     .distinctUntilChanged()
@@ -140,18 +145,20 @@ class PasswordViewModel @Inject constructor(
         loadPasswords()
     }
 
-    fun setFilter(filter: PasswordFilter) {
-        _filterMode.value = filter
-        if (filter is PasswordFilter.CATEGORY) {
-            lastSelectedCategoryId = filter.categoryId
-            prefs.edit().putLong(KEY_SELECTED_CATEGORY, filter.categoryId).apply()
-        }
+    fun setCategory(categoryId: Long) {
+        _selectedCategoryId.value = categoryId
+        lastSelectedCategoryId = categoryId
+        prefs.edit().putLong(KEY_SELECTED_CATEGORY, categoryId).apply()
     }
 
-    fun clearTagFilter() {
-        val target = PasswordFilter.CATEGORY(lastSelectedCategoryId)
-        if (_filterMode.value != target) {
-            _filterMode.value = target
+    fun toggleFavorites() {
+        _isFavoritesOnly.value = !_isFavoritesOnly.value
+    }
+
+    fun reorderCategories(orderedIds: List<Long>) {
+        viewModelScope.launch {
+            categoryRepository.updateCategorySortOrders(orderedIds)
+            triggerAutoSync()
         }
     }
 
@@ -180,6 +187,13 @@ class PasswordViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
+    fun setSearchActive(active: Boolean) {
+        _isSearchActive.value = active
+        if (!active) {
+            _searchQuery.value = ""
+        }
+    }
+
     fun setSortOrder(order: SortOrder) {
         _sortOrder.value = order
     }
@@ -188,12 +202,6 @@ class PasswordViewModel @Inject constructor(
         viewModelScope.launch {
             repository.updateFavoriteStatus(id, isFavorite)
             triggerAutoSync()
-        }
-    }
-
-    fun markAsUsed(id: Long) {
-        viewModelScope.launch {
-            repository.updateLastUsed(id)
         }
     }
 
@@ -220,7 +228,6 @@ class PasswordViewModel @Inject constructor(
                 repository.insertPassword(title, username, password, website, notes, iconColor, strength, categoryId)
             } else {
                 repository.updatePassword(id, title, username, password, website, notes, iconColor = iconColor, strength = strength, categoryId = categoryId)
-                repository.updateLastUsed(id)
             }
             triggerAutoSync()
             onSaved?.invoke()
@@ -303,6 +310,17 @@ class PasswordViewModel @Inject constructor(
         viewModelScope.launch {
             val sortOrder = categories.value.size
             categoryRepository.insertCategory(name, colorIndex, sortOrder)
+        }
+    }
+
+    fun deleteCategory(categoryId: Long) {
+        if (categoryId == CategoryConstants.UNCATEGORIZED_ID || categoryId == 0L) return
+        viewModelScope.launch {
+            categoryRepository.deleteCategory(categoryId)
+            if (_selectedCategoryId.value == categoryId) {
+                setCategory(0L)
+            }
+            triggerAutoSync()
         }
     }
 

@@ -37,6 +37,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
 import com.example.passvault.ui.generator.GeneratorScreen
 import com.example.passvault.ui.passwords.PasswordListScreen
 import com.example.passvault.ui.passwords.PasswordViewModel
@@ -73,13 +74,14 @@ fun MainScreen(
         ) {
             composable(BottomNavItem.Passwords.route) {
                 val passwordViewModel: PasswordViewModel = hiltViewModel()
+                val selectedCategoryId by passwordViewModel.selectedCategoryId.collectAsState()
                 PasswordListScreen(
                     viewModel = passwordViewModel,
                     onPasswordClick = { id ->
                         rootNavController.navigate("password_detail/$id")
                     },
                     onAddClick = {
-                        rootNavController.navigate("password_detail/new")
+                        rootNavController.navigate("password_detail/new?categoryId=$selectedCategoryId")
                     }
                 )
             }
@@ -88,7 +90,6 @@ fun MainScreen(
             }
             composable(BottomNavItem.Settings.route) {
                 SettingsScreen(
-                    onLock = onLock,
                     onNavigateToCategoryManagement = {
                         rootNavController.navigate("category_management")
                     },
