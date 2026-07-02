@@ -63,6 +63,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -533,6 +535,7 @@ fun FieldRow(
     onCopy: (() -> Unit)? = null
 ) {
     var copied by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     LaunchedEffect(copied) {
         if (copied) { delay(1500); copied = false }
@@ -546,7 +549,16 @@ fun FieldRow(
                 text = value,
                 style = MaterialTheme.typography.titleSmall,
                 color = if (isLink) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (isLink) Modifier.clickable {
+                            val url = if (value.startsWith("http://") || value.startsWith("https://")) value else "https://$value"
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            } catch (_: Exception) { }
+                        } else Modifier
+                    )
             )
             if (onCopy != null) {
                 IconButton(
