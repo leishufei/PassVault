@@ -226,7 +226,12 @@ fun PasswordListScreen(
                     ) {
                         if (isSearchActive) {
                             LaunchedEffect(Unit) {
-                                searchFocusRequester.requestFocus()
+                                kotlinx.coroutines.delay(100)
+                                try {
+                                    searchFocusRequester.requestFocus()
+                                } catch (_: IllegalStateException) {
+                                    // FocusRequester not yet attached
+                                }
                             }
                             Box(
                                 modifier = Modifier
