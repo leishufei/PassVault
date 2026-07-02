@@ -127,7 +127,9 @@ fun PasswordListScreen(
     var showBulkDeleteDialog by remember { mutableStateOf(false) }
     var singleDeleteTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
     var showCategoryPicker by remember { mutableStateOf(false) }
+    var showCopyToCategoryPicker by remember { mutableStateOf(false) }
     var singleEditTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
+    var copyTarget by remember { mutableStateOf<PasswordEntryListItem?>(null) }
     var isCategoryEditMode by remember { mutableStateOf(false) }
     var deleteCategoryTarget by remember { mutableStateOf<com.example.passvault.data.model.Category?>(null) }
     val listState = rememberSaveable(saver = LazyListState.Saver) {
@@ -580,6 +582,12 @@ fun PasswordListScreen(
                                 showCategoryPicker = true
                             }
                         }
+                        val onCopyToCategory = remember(password.id) {
+                            {
+                                copyTarget = password
+                                showCopyToCategoryPicker = true
+                            }
+                        }
                         val onDelete = remember(password.id) {
                             { singleDeleteTarget = password }
                         }
@@ -593,6 +601,7 @@ fun PasswordListScreen(
                             onFavoriteClick = onFavoriteClick,
                             onCopyUsername = onCopyUsername,
                             onCopyPassword = onCopyPassword,
+                            onCopyToCategory = onCopyToCategory,
                             onMoveCategory = onMoveCategory,
                             onDelete = onDelete
                         )
@@ -653,6 +662,27 @@ fun PasswordListScreen(
                 viewModel.addCategory(name, colorIndex)
             }
         )
+    }
+
+    if (showCopyToCategoryPicker) {
+        val target = copyTarget
+        if (target != null) {
+            CategoryPickerSheet(
+                categories = categories,
+                currentCategoryId = null,
+                title = "复制到分类",
+                onPick = { newId ->
+                    viewModel.copyToCategory(target.id, newId)
+                },
+                onDismiss = {
+                    showCopyToCategoryPicker = false
+                    copyTarget = null
+                },
+                onAddCategory = { name, colorIndex ->
+                    viewModel.addCategory(name, colorIndex)
+                }
+            )
+        }
     }
 
     if (showBulkDeleteDialog) {
@@ -1011,6 +1041,7 @@ fun PasswordListItem(
     onFavoriteClick: () -> Unit,
     onCopyUsername: () -> Unit,
     onCopyPassword: (onCopied: (String) -> Unit) -> Unit,
+    onCopyToCategory: () -> Unit,
     onMoveCategory: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -1187,6 +1218,28 @@ fun PasswordListItem(
                                     clipboardManager.setText(AnnotatedString(decryptedPassword))
                                     Toast.makeText(context, "已复制密码", Toast.LENGTH_SHORT).show()
                                 }
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        "复制到分类",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            },
+                            onClick = {
+                                onCopyToCategory()
                                 showMenu = false
                             }
                         )

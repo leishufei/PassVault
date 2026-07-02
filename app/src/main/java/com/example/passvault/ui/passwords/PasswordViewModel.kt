@@ -297,6 +297,13 @@ class PasswordViewModel @Inject constructor(
         }
     }
 
+    fun copyToCategory(id: Long, newCategoryId: Long) {
+        viewModelScope.launch {
+            repository.duplicateToCategory(id, newCategoryId)
+            triggerAutoSync()
+        }
+    }
+
     private fun triggerAutoSync() {
         syncScheduler.markDirty()
     }

@@ -182,6 +182,21 @@ class PasswordRepository @Inject constructor(
         passwordDao.updateCategory(id, newCategoryId, System.currentTimeMillis())
     }
 
+    suspend fun duplicateToCategory(id: Long, newCategoryId: Long): Long {
+        val existing = passwordDao.getPasswordById(id) ?: return -1
+        val now = System.currentTimeMillis()
+        val copy = existing.copy(
+            id = 0,
+            uuid = java.util.UUID.randomUUID().toString(),
+            categoryId = newCategoryId,
+            isFavorite = false,
+            isDeleted = false,
+            createdAt = now,
+            updatedAt = now
+        )
+        return passwordDao.insertPassword(copy)
+    }
+
     fun getPasswordsByCategory(categoryId: Long): Flow<List<PasswordEntryDisplay>> {
         return passwordDao.getPasswordsByCategory(categoryId).map { entries ->
             entries.map { it.toDisplay() }
